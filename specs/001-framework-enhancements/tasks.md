@@ -1,6 +1,6 @@
 # Tasks: 001-framework-enhancements
 
-- [ ] T001 · Auto-populate verify_build() in /plan skill
+- [x] T001 · Auto-populate verify_build() in /plan skill
 - [ ] T002 · Structured delta checks in sync agent
 - [ ] T003 · Implement manifest.json end-to-end
 - [ ] T004 · Checkpoint QC triggers in ralph.sh

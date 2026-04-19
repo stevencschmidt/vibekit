@@ -263,7 +263,63 @@ SPEC_TASKS_FILE="$PROJECT_ROOT/specs/NNN-slug/tasks.md"
 
 Replace the existing `SPEC_TASKS_FILE=` line with the correct path for this spec. This ensures Ralph reads the right tasks.md without any manual config change.
 
-### 8. Verify/fix .claude/settings.json
+### 8. Populate verify_build() in vibekit.config.sh
+
+Detect the project's primary stack from the brief and the proposed file structure (Phase 2):
+
+- **Python** — `requirements.txt`, `pyproject.toml`, or a `.py` entry file is present
+- **Node** — `package.json` is present
+- **Go** — `go.mod` is present
+- **Rust** — `Cargo.toml` is present
+- **Bash-only** — none of the above apply
+
+Replace the `verify_build() { return 0; }` stub in `vibekit.config.sh` with a body appropriate to the detected stack:
+
+**Python:**
+```bash
+verify_build() {
+  python -c "import ast; ast.parse(open('<entry>.py').read())" || return 1
+  python -c "from <module> import <name>" || return 1
+}
+```
+Use the actual entry file name (e.g. `server.py`, `main.py`, `app.py`). If an importable entry exists, include the import check. If no importable entry is obvious, omit the second line.
+
+**Node (TypeScript):**
+```bash
+verify_build() {
+  npx tsc --noEmit 2>/dev/null || return 1
+}
+```
+If plain JS (no `tsconfig.json`): use `node --check <entry>.js`.
+
+**Go:**
+```bash
+verify_build() {
+  go build ./... || return 1
+}
+```
+
+**Rust:**
+```bash
+verify_build() {
+  cargo check --quiet || return 1
+}
+```
+
+**Bash-only:**
+```bash
+verify_build() {
+  for f in scripts/*.sh; do bash -n "$f" || return 1; done
+}
+```
+
+**Rule:** Do not write `verify_build() { return 0; }` as the sole body. If you cannot determine a plausible verify command from the brief and proposed stack, stop and ask the user before continuing:
+
+> "I need a `verify_build()` command for `vibekit.config.sh`. What command reliably exits 0 when the project is working and non-zero when it's broken? (e.g. `go build ./...`, `python -c "from app import main"`, `npm test -- --passWithNoTests`)"
+
+Do not proceed to the next step until a real verify command is confirmed.
+
+### 9. Verify/fix .claude/settings.json
 
 Write `.claude/settings.json` with exactly this content:
 ```json
@@ -282,7 +338,7 @@ After writing, read the file back and confirm:
 
 If either check fails, rewrite the file. Do not proceed to the commit step until the read-back confirms both values are correct.
 
-### 9. Commit
+### 10. Commit
 
 Stage all changed files and create two commits:
 
@@ -297,7 +353,7 @@ Stage all changed files and create two commits:
 [plan] NNN-slug — N tasks ready for Ralph
 ```
 
-### 10. Run Ralph
+### 11. Run Ralph
 
 Run Ralph to begin execution immediately:
 
