@@ -6,18 +6,27 @@
 #
 # Usage:
 #   source scripts/sync-helpers.sh
-#   value=$(sync_read "execution.phase")
-#   sync_write "execution.current_task_status" "in_progress"
+#   value=$(sync_read "ralph.task_id")
+#   sync_write "ralph.last_sentinel" "[TASK_COMPLETE: T001]"
 #   session_log_append "ralph" 3 "2026-03-18T10:00:00Z" "2026-03-18T11:00:00Z" "TASK_COMPLETE" 45000 '["T001"]'
+
+# Resolve python3 interpreter once at source time — avoids spawning subprocesses
+# on every sync_read/sync_write call.
+_VIBEKIT_PY=""
+if python3 -c "import sys; sys.exit(0)" 2>/dev/null; then
+    _VIBEKIT_PY="python3"
+elif python -c "import sys; sys.exit(0 if sys.version_info[0] >= 3 else 1)" 2>/dev/null; then
+    _VIBEKIT_PY="python"
+fi
 
 # ---------------------------------------------------------------------------
 # sync_read <field_path>
 #
 # Read a single field from sync.json using dot-notation.
 # Examples:
-#   sync_read "execution.phase"       → "execution"
-#   sync_read "architect.pending_decision"  → "false"
-#   sync_read "ralph.acceptance_criteria"   → JSON array string
+#   sync_read "ralph.task_id"         → "T003"
+#   sync_read "ralph.last_sentinel"   → "[TASK_COMPLETE: T003]"
+#   sync_read "ralph.session"         → "1"
 #
 # Returns: plain string for string/number/bool/null, JSON for objects/arrays.
 # Uses python3 (primary). Falls back to jq if python3 is unavailable.
@@ -41,16 +50,8 @@ sync_read() {
         return 1
     fi
 
-    # Resolve python3 interpreter: prefer python3, fall back to python (if Python 3)
-    local _py=""
-    if python3 -c "import sys; sys.exit(0)" 2>/dev/null; then
-        _py="python3"
-    elif python -c "import sys; sys.exit(0 if sys.version_info[0] >= 3 else 1)" 2>/dev/null; then
-        _py="python"
-    fi
-
-    if [[ -n "$_py" ]]; then
-        "$_py" - "$SYNC_FILE" "$field_path" <<'PYEOF'
+    if [[ -n "$_VIBEKIT_PY" ]]; then
+        "$_VIBEKIT_PY" - "$SYNC_FILE" "$field_path" <<'PYEOF'
 import sys, json
 
 sync_file = sys.argv[1]
@@ -95,6 +96,7 @@ PYEOF
 
 # ---------------------------------------------------------------------------
 # sync_write <field_path> <value>
+
 #
 # Write a single field in sync.json using dot-notation.
 # Value type is inferred: JSON-parseable values (true, false, null, numbers,
@@ -130,16 +132,8 @@ sync_write() {
         return 1
     fi
 
-    # Resolve python3 interpreter: prefer python3, fall back to python (if Python 3)
-    local _py=""
-    if python3 -c "import sys; sys.exit(0)" 2>/dev/null; then
-        _py="python3"
-    elif python -c "import sys; sys.exit(0 if sys.version_info[0] >= 3 else 1)" 2>/dev/null; then
-        _py="python"
-    fi
-
-    if [[ -n "$_py" ]]; then
-        "$_py" - "$SYNC_FILE" "$field_path" "$value" <<'PYEOF'
+    if [[ -n "$_VIBEKIT_PY" ]]; then
+        "$_VIBEKIT_PY" - "$SYNC_FILE" "$field_path" "$value" <<'PYEOF'
 import sys, json, os, tempfile
 
 sync_file  = sys.argv[1]
@@ -209,9 +203,9 @@ PYEOF
 # ---------------------------------------------------------------------------
 # session_log_append <layer> <session> <started> <ended> <exit_reason> <estimated_tokens> <tasks_completed>
 #
-# Append a session record to state/session-log.json per data-model.md entity #6.
+# Append a session record to state/session-log.json.
 # Arguments:
-#   layer             — architect | supervisor | ralph
+#   layer             — ralph (primary layer; keep flexible for future use)
 #   session           — integer session number
 #   started           — ISO-8601 start timestamp
 #   ended             — ISO-8601 end timestamp
@@ -254,16 +248,8 @@ session_log_append() {
     estimated_tokens="${estimated_tokens:-0}"
     tasks_completed="${tasks_completed:-[]}"
 
-    # Resolve python3 interpreter: prefer python3, fall back to python (if Python 3)
-    local _py=""
-    if python3 -c "import sys; sys.exit(0)" 2>/dev/null; then
-        _py="python3"
-    elif python -c "import sys; sys.exit(0 if sys.version_info[0] >= 3 else 1)" 2>/dev/null; then
-        _py="python"
-    fi
-
-    if [[ -n "$_py" ]]; then
-        "$_py" - "$SESSION_LOG_FILE" "$layer" "$session" "$started" "$ended" \
+    if [[ -n "$_VIBEKIT_PY" ]]; then
+        "$_VIBEKIT_PY" - "$SESSION_LOG_FILE" "$layer" "$session" "$started" "$ended" \
                  "$exit_reason" "$estimated_tokens" "$tasks_completed" <<'PYEOF'
 import sys, json, os, tempfile
 

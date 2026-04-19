@@ -1,12 +1,39 @@
-# CLAUDE.md
+# vibekit
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+A Claude Code knowledge graph system and autonomous execution toolkit. Solves context bloat and context rot. Ships as a standalone repo; `init.sh` scaffolds the system into target projects.
 
-## What This Is
+---
 
-vibekit is a Claude Code knowledge graph system and autonomous execution toolkit. It solves two problems: **context bloat** (CLAUDE.md files growing to 15K tokens) and **context rot** (decisions evaporating between sessions). It ships as a standalone repo; `init.sh` scaffolds the system into target projects.
+## Domain Files
 
-Three pillars:
+Load the relevant file(s) for your current task. Do not load all files.
+
+| When working on... | Load |
+|--------------------|------|
+| Pillar architecture, component structure, data flow, boundaries | `docs/claude/architecture.md` |
+| Script conventions, commit prefixes, sentinel protocol, skill format | `docs/claude/conventions.md` |
+| Dependencies, bash/python/claude CLI, tooling | `docs/claude/stack.md` |
+
+---
+
+## Quick Facts
+
+- **Run Ralph:** `bash scripts/ralph.sh [--tool claude|amp] [--model MODEL] [--max N] [--skip-qc] [--dry-run]`
+- **Scaffold a project:** `./init.sh <target-dir> [project-name]`
+- **No build step, no package manager** — bash + python3 + claude CLI
+
+---
+
+## Decision Log
+
+Total decisions: 001
+
+Read the last 5 entries from `docs/claude/decisions.md` when making architectural choices.
+
+---
+
+## Three Pillars
+
 1. **Knowledge graph** — lean CLAUDE.md router + focused domain files in `docs/claude/`, updated automatically via hooks
 2. **`/plan` skill** — one conversational Claude Code command produces a spec, task list, and populates sync.json for Ralph
 3. **Ralph** — autonomous bash execution loop that runs tasks from `state/sync.json` using `claude --dangerously-skip-permissions --print`
@@ -14,10 +41,10 @@ Three pillars:
 ## Running Ralph
 
 ```bash
-bash scripts/ralph.sh [--tool claude|amp] [--model MODEL] [--max N] [--dry-run]
+bash scripts/ralph.sh [--tool claude|amp] [--model MODEL] [--max N] [--skip-qc] [--dry-run]
 ```
 
-Ralph requires `vibekit.config.sh` at project root and `state/sync.json` to exist before running. Dry-run shows the preflight summary and exits without executing.
+Ralph requires `vibekit.config.sh` at project root and `state/sync.json` to exist before running. Dry-run shows the preflight summary and exits without executing. `--skip-qc` bypasses the post-completion QC loop.
 
 ## Script Architecture
 
@@ -45,6 +72,9 @@ Three functions for sentinel detection from Claude output strings:
 - `extract_task_id "$OUTPUT"` — extracts `T###` from a TASK_COMPLETE sentinel
 - `extract_block_reason "$OUTPUT"` — extracts the reason string from a TASK_BLOCKED sentinel
 
+### `scripts/qc-prompt.md`
+Prompt template for the QC agent. Runs after all tasks complete. Reads `brief.md`, surveys what was built, and either emits `[QC_COMPLETE]` (no gaps) or appends new tasks to `tasks.md` and updates `state/sync.json` for Ralph to continue.
+
 ### Sentinel protocol
 Claude emits one of these at end of task output:
 ```
@@ -52,6 +82,7 @@ Claude emits one of these at end of task output:
 [TASK_BLOCKED: <specific human-readable reason>]
 [SESSION_HANDOFF]
 ```
+The QC agent emits `[QC_COMPLETE]` (no brackets pair — standalone) when no gaps are found.
 
 ## `vibekit.config.sh` (per-project, not in this repo)
 
@@ -77,6 +108,7 @@ verify_build() { return 0; }  # project-specific
   "ralph": {
     "task_id": null,
     "task_title": "",
+    "relevant_files": [],
     "last_sentinel": null,
     "last_updated": null,
     "session": 1
@@ -93,26 +125,11 @@ Two different things share the word "skill":
 - **Vibekit domain skills** (`skills/<name>/manifest.md`) — domain knowledge injected into `ralph-prompt.md` via `{{SKILLS_CONTEXT}}`. Project-specific, zero shipped with vibekit.
 - **Claude Code skills** (`.claude/skills/*/SKILL.md`) — slash commands for interactive sessions. vibekit ships two: `/plan` (planning) and `knowledge-graph-sync` (background hook).
 
-## What Still Needs to Be Built
-
-Per the implementation plan:
-- Reorganize root scripts → `scripts/` subdirectory
-- `scripts/ralph-prompt.md` — prompt template with `{{SKILLS_CONTEXT}}`
-- `scripts/sync-agent.sh` — PreCompact/SessionEnd hook runner
-- `templates/vibekit.config.sh` — project config template
-- `templates/state/` — sync.json, session-log.json, decisions.md
-- `templates/CLAUDE.md` — router template
-- `templates/docs/claude/` — domain file stubs
-- `.claude/skills/plan/SKILL.md` — unified planning skill
-- `.claude/skills/knowledge-graph-sync/SKILL.md` — background sync skill
-- `.claude/settings.json` — hooks + 50% autocompact threshold
-- `templates/.obsidian/` — vault config for docs/claude/
-- `init.sh` — scaffolds vibekit into a target project
-
 ## Commit Prefixes
 
 ```
 [claude-docs]   knowledge graph updates (sync agent)
 [plan]          spec + task generation
 [ralph]         task completions
+[ralph] QC-T### complete — QC-identified gap fix
 ```

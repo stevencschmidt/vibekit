@@ -46,9 +46,6 @@ vibekit/
         plan/SKILL.md              # Unified planning skill — user's primary entry point
         knowledge-graph-sync/SKILL.md  # Background sync — invoked by hooks only
       settings.json                # Hook config + 50% autocompact [BUILD]
-    .obsidian/                     # Vault config for docs/claude/ [BUILD]
-      app.json
-      graph.json
 ```
 
 ### Target project after `init.sh`
@@ -71,12 +68,11 @@ my-project/
     decisions.md                   # Ralph's pattern/decision log (inter-task coherence)
     ralph.log                      # Append-only run log
 
-  docs/claude/                     # Knowledge graph domain files (Obsidian vault)
+  docs/claude/                     # Knowledge graph domain files
     decisions.md                   # Append-only audit log (KG layer)
     architecture.md
     conventions.md
     stack.md
-    .obsidian/
 
   specs/
     NNN-slug/
@@ -292,7 +288,7 @@ Invoked exclusively by `sync-agent.sh` via PreCompact and SessionEnd hooks.
 - Examines `git diff HEAD`, `git log --oneline -10`, current state of `docs/claude/`
 - Checks for 4 signals: decision made, pattern established, project understanding changed, ambiguity resolved
 - If none → silent exit (no write, no commit)
-- If triggered → writes to the right domain file, adds decision anchor with `<!-- DECISION:NNN -->`, updates wikilinks
+- If triggered → writes to the right domain file, adds decision anchor with `<!-- DECISION:NNN -->`, references related files by path in prose (e.g. "see docs/claude/decisions.md#031")
 - Commits: `[claude-docs] update <file> — <reason>`
 
 ### Step 8 — `.claude/settings.json` template
@@ -307,14 +303,7 @@ Invoked exclusively by `sync-agent.sh` via PreCompact and SessionEnd hooks.
 }
 ```
 
-### Step 9 — Obsidian config (`templates/.obsidian/`)
-
-`app.json` — sets vault folder to `docs/claude/`, enables wikilinks
-`graph.json` — default graph view settings
-
-Obsidian is read-only from the human's perspective — never edit `docs/claude/` files manually. Install on your local machine and point it at the project's `docs/claude/` folder.
-
-### Step 10 — `init.sh`
+### Step 9 — `init.sh`
 
 Usage: `./init.sh <target-dir> [project-name]`
 
@@ -323,13 +312,13 @@ Usage: `./init.sh <target-dir> [project-name]`
 3. Copy templates (substituting `PROJECT_NAME` in vibekit.config.sh and CLAUDE.md)
 4. Make scripts executable
 5. Create `state/` with sync.json, session-log.json, decisions.md
-6. Create `docs/claude/` with stub domain files + `.obsidian/`
+6. Create `docs/claude/` with stub domain files
 7. Install `.claude/skills/` from templates
 8. Write `.claude/settings.json`
 9. `git init` if no .git present
 10. Print next steps
 
-### Step 11 — vibekit's own knowledge graph
+### Step 10 — vibekit's own knowledge graph
 
 Apply vibekit to itself:
 - Populate `CLAUDE.md` router for the vibekit repo

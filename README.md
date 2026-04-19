@@ -1,0 +1,272 @@
+# vibekit
+
+Autonomous execution toolkit for Claude Code. Solves two problems that compound across a project's lifetime:
+
+- **Context bloat** — monolithic CLAUDE.md files grow to 10,000+ tokens and get loaded in full every session, most of it irrelevant
+- **Context rot** — decisions and patterns established in conversation evaporate between sessions because nothing persists them
+
+vibekit ships as a standalone repo. `init.sh` scaffolds the system into any target project in under a minute.
+
+---
+
+## How It Works
+
+Three independent pillars:
+
+**1. Knowledge graph** — replaces a monolithic CLAUDE.md with a lean router (~50 lines, always loaded) that points to focused domain files (`docs/claude/`). Each session loads only the files relevant to the current task (~2,500 tokens vs. 8,000–15,000 for a bloated CLAUDE.md). A background sync agent (`sync-agent.sh`) runs on `PreCompact` and `SessionEnd` hooks to persist decisions and patterns before they evaporate.
+
+**2. `/plan` skill** — a structured 3-phase conversation in Claude Code that turns a project brief into a complete, executable plan: knowledge graph files, a spec, and a task list that Ralph can run autonomously. One command, one conversation, one "yes".
+
+**3. Ralph** — autonomous bash execution loop. Reads tasks from `state/sync.json`, runs `claude --print` for each task, detects completion sentinels, verifies the build, commits, and loops. Handles rate limits with live countdowns, rolls back partial work on failure, and stops with a structured reason when blocked.
+
+---
+
+## Prerequisites
+
+- `bash`
+- `python3`
+- `git`
+- `claude` CLI (Claude Code) — authenticated (`claude login`)
+- A Claude Pro subscription (Ralph uses `--dangerously-skip-permissions --print`)
+
+---
+
+## Setup (once per project)
+
+**1. Clone vibekit:**
+```bash
+git clone <vibekit-repo> ~/vibekit
+```
+
+**2. Scaffold into your project:**
+```bash
+~/vibekit/init.sh ~/my-project "My Project"
+```
+
+This creates the full project structure under `~/my-project/` and makes an initial git commit.
+
+That's it — you can start planning immediately. `vibekit.config.sh` has sensible defaults and requires no changes to get started.
+
+---
+
+## Planning and Building a Feature (`/plan`)
+
+Write `brief.md` in your project directory — a plain markdown file describing what you want to build, about a page. Cover what success looks like, any hard constraints, and what's out of scope. No special format required.
+
+Then open Claude Code in your project directory. Before running `/plan`, set the advisor model for better judgment on scope and dependency decisions:
+
+```
+/advisor claude-opus-4-6
+```
+
+Then run:
+
+```
+/plan brief.md
+```
+
+The `/plan` skill runs a 3-phase conversation:
+
+**Phase 1 — Scope lock** (2–3 exchanges)
+Claude reads the brief and asks three questions: user-visible outcome, hard constraints, out of scope. Confirm or correct.
+
+**Phase 2 — Structure** (1–2 exchanges)
+Claude proposes the folder layout and which knowledge graph domain files to create. Confirm or adjust in one message.
+
+**Phase 3 — Plan confirmation** (1 exchange)
+Claude shows a full summary before writing anything:
+```
+Plan: 001-my-feature
+──────────────────────────────────────
+Tasks:   T001 – T007 (7 tasks)
+Verify:  npm test exits 0
+
+Knowledge graph:
+  CLAUDE.md                    ← router (update)
+  docs/claude/architecture.md  ← new
+  docs/claude/conventions.md   ← new
+  docs/claude/stack.md         ← new
+
+Settings:
+  autoCompactThreshold: 0.5    ✓
+  PreCompact hook: sync-agent.sh  ✓
+  SessionEnd hook: sync-agent.sh  ✓
+
+──────────────────────────────────────
+Ready to generate? (yes / adjust)
+```
+
+Type **yes**. Claude writes all files, commits, and starts Ralph immediately — no separate command needed.
+
+---
+
+## Execution (Ralph)
+
+Ralph starts automatically when you confirm the plan. If you need to resume after a stop (rate limit, `TASK_BLOCKED`, or manual interrupt), run it yourself:
+
+```bash
+bash scripts/ralph.sh --max 50
+```
+
+Ralph reads `state/sync.json` for the current task, runs Claude to execute it, verifies the build, commits, and loops until all tasks are done or it needs to stop.
+
+**Options:**
+```
+--tool claude|amp    # default: claude
+--model MODEL        # default: claude-sonnet-4-6
+--max N              # max iterations before stopping (default: 50)
+--task T###          # resume from a specific task (e.g. after TASK_BLOCKED)
+--skip-qc            # skip the post-completion QC loop
+--dry-run            # show preflight summary and exit without executing
+```
+
+**What Ralph does each iteration:**
+1. Checks rate limit before starting (waits with live countdown if needed)
+2. Saves `HEAD` SHA for rollback
+3. Runs `claude --dangerously-skip-permissions --print` with the task prompt
+4. Detects sentinel in output (`TASK_COMPLETE`, `TASK_BLOCKED`, or `SESSION_HANDOFF`)
+5. On `TASK_COMPLETE`: runs `verify_build()` from your config
+   - Pass: safety commit if needed, marks task `[x]` in tasks.md, clears task from sync.json
+   - Fail: `git reset --hard` to pre-iteration SHA, retries (3-strike limit)
+6. On stall (no sentinel): rollback and retry (3-strike limit, tracked separately from build failures)
+7. On `TASK_BLOCKED`: stops with a structured reason for human review
+8. When all tasks complete: enters QC loop — runs Claude against `brief.md` to find gaps, appends new tasks if found, repeats until `[QC_COMPLETE]` (use `--skip-qc` to bypass)
+
+**Rate limits:** Ralph checks OAuth usage before each iteration and detects rate limit messages in output. On limit, it calculates the exact reset time and shows a live countdown. Rate limits do not count against the stall counter.
+
+---
+
+## Monitoring
+
+```bash
+# Live log
+tail -f state/ralph.log
+
+# Task completions
+git log --oneline --grep="\[ralph\]"
+
+# Knowledge graph updates
+git log --oneline --grep="\[claude-docs\]"
+
+# Current task status
+cat state/sync.json
+```
+
+---
+
+## Project Structure After `init.sh`
+
+```
+my-project/
+  CLAUDE.md                  # Router — always loaded, points to docs/claude/
+  vibekit.config.sh          # Tool/model/paths + verify_build()
+
+  scripts/
+    ralph.sh                 # Autonomous execution loop
+    sync-helpers.sh          # sync_read / sync_write / session_log_append
+    monitor.sh               # Sentinel detection from Claude output
+    ralph-prompt.md          # Prompt template Ralph feeds to Claude each iteration
+    qc-prompt.md             # Prompt template for post-completion QC review agent
+    sync-agent.sh            # PreCompact/SessionEnd hook — runs knowledge-graph-sync
+
+  state/
+    sync.json                # Current task, last sentinel, session counter
+    session-log.json         # Per-session execution history
+    decisions.md             # Ralph's inter-task pattern/decision log
+    ralph.log                # Append-only run log (created on first run)
+
+  docs/claude/               # Knowledge graph domain files
+    decisions.md             # Append-only audit log (architectural decisions with anchors)
+    architecture.md
+    conventions.md
+    stack.md
+
+  specs/
+    NNN-slug/
+      spec.md                # Full context, decisions, constraints
+      tasks.md               # Checkbox task list Ralph executes
+
+  skills/                    # Optional: domain knowledge packages
+    <name>/
+      manifest.md            # Injected into ralph-prompt via {{SKILLS_CONTEXT}}
+      verify.sh              # Optional per-skill post-completion check
+
+  .claude/
+    skills/
+      plan/SKILL.md          # /plan slash command
+      knowledge-graph-sync/SKILL.md  # Background sync (invoked by hooks only)
+    settings.json            # autoCompactThreshold: 0.5 + hook config
+```
+
+---
+
+## `vibekit.config.sh` Reference
+
+```bash
+TOOL="claude"                # claude | amp
+MODEL="claude-sonnet-4-6"    # any Claude model
+SYNC_FILE="$PROJECT_ROOT/state/sync.json"
+SESSION_LOG_FILE="$PROJECT_ROOT/state/session-log.json"
+RALPH_PROMPT="$PROJECT_ROOT/scripts/ralph-prompt.md"
+DECISIONS_FILE="$PROJECT_ROOT/state/decisions.md"
+LOG_FILE="$PROJECT_ROOT/state/ralph.log"
+SPEC_TASKS_FILE="$PROJECT_ROOT/specs/001-slug/tasks.md"  # auto-updated by /plan
+SKILLS=()                    # e.g. ("typescript" "react") — maps to skills/<name>/manifest.md
+
+verify_build() {
+  # Run after each task completion. Return 0 = pass, non-zero = fail + rollback.
+  return 0
+}
+```
+
+---
+
+## Domain Skills (Optional)
+
+Domain skills inject project-specific knowledge into every Ralph iteration. Create `skills/<name>/manifest.md` with whatever context Ralph should always have for that domain (patterns, conventions, API shapes), then register it:
+
+```bash
+# vibekit.config.sh
+SKILLS=("typescript" "prisma")
+```
+
+Ralph loads all registered skill manifests and injects them at the bottom of its prompt via `{{SKILLS_CONTEXT}}`.
+
+Optionally add `skills/<name>/verify.sh` for per-skill post-completion verification (runs after `verify_build()`).
+
+---
+
+## When Ralph Stops
+
+| Reason | What happened | What to do |
+|--------|---------------|------------|
+| `TASK_BLOCKED` | Task has an unresolvable dependency or ambiguity | Read the reason in `state/ralph.log`, fix the task or unblock the dependency, then: `bash scripts/ralph.sh --task T### --max 50` |
+| Stalled 3x | Claude didn't complete the task 3 times in a row | Task may be too large or missing context — split it in tasks.md or add a `Relevant:` line |
+| Build failed 3x | Task completed but `verify_build()` failed 3 times | Fix the verify command or the task description, run ralph again |
+| Max iterations | Reached `--max` limit | Run ralph again to continue |
+| QC round cap (5x) | QC loop identified gaps 5 times without resolving them | Review `brief.md` and the QC-added tasks — the brief may be under-specified or tasks may be too vague |
+
+---
+
+## Workflow Summary
+
+```
+1. Write brief.md in your project directory (~1 page)
+2. Open Claude Code in the project directory
+3. /plan brief.md  →  answer 3 rounds  →  yes  →  Ralph starts automatically
+4. Watch progress / tail state/ralph.log
+5. On TASK_BLOCKED: read the reason, fix the task, then resume:
+   bash scripts/ralph.sh --task T### --max 50
+```
+
+### Optional: build verification
+
+By default, Ralph marks tasks complete without running any external check. To add a post-task gate, edit `vibekit.config.sh`:
+
+```bash
+verify_build() {
+  npm test    # return 0 = pass, non-zero = rollback and retry
+}
+```
+
+After the first spec, start the next one with `/plan brief2.md`. The knowledge graph from prior specs loads automatically, so `/plan` asks fewer questions and Ralph stalls less. The system compounds.

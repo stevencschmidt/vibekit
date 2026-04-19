@@ -68,20 +68,25 @@ docs/claude/
   testing.md
   integrations.md
   ...
-.obsidian/                       ← vault config (core committed, rest gitignored)
 ```
 
 ### CLAUDE.md Is a Router, Not a Document
 
 `CLAUDE.md` contains only:
 - Project identity (name, one-line description)
-- Routing table: which domain file to load and when
+- Context-loading instruction pointing to `docs/claude/manifest.json` (the routing table no longer lives in CLAUDE.md and is never manually maintained there)
 - Quick facts (test command, dev server, branch convention)
 - Decision log counter + instruction to read only the last 5 entries
 
 It never contains content. It points to content. A session that opens CLAUDE.md and loads
 two relevant domain files uses ~2,500 tokens. A session that loads a bloated CLAUDE.md uses
 8,000–15,000. The router pattern makes this difference structural and permanent.
+
+**CLAUDE.md is never a write target.** Neither the sync agent nor Ralph may write content
+into CLAUDE.md. The only permitted mutations are: updating the routing table when a new
+domain file is created, and incrementing the decision counter. Any content that doesn't fit
+in an existing domain file belongs in a new domain file — not in CLAUDE.md. This invariant
+must be explicitly enforced in both `knowledge-graph-sync` and `ralph-prompt.md`.
 
 ### decisions.md Is an Append-Only Audit Log
 
@@ -112,6 +117,44 @@ the execution engine — it makes context loading precise rather than routing-ta
 }
 ```
 
+### Manifest-Driven Context Loading
+
+The routing table is replaced by `docs/claude/manifest.json` — a machine-readable index of every domain file maintained exclusively by the sync agent. `CLAUDE.md` contains one standing instruction:
+
+> Before starting any task, read `docs/claude/manifest.json`. Based on the task at hand, identify the 1–3 most relevant domain files. Read only those files. State which files you loaded and why.
+
+The manifest entry for each domain file contains: its path, a one-line summary of what it covers, and a `tags` array of keywords. At 40 files, the full manifest costs ~2,000 tokens to read — from which Claude self-selects 1–3 files at ~800 tokens each. Total context overhead stays under 5,000 tokens regardless of how many domain files the project accumulates.
+
+The manifest schema:
+
+```json
+{
+  "files": [
+    {
+      "path": "docs/claude/auth.md",
+      "summary": "Authentication patterns using Supabase Auth. Server component pattern. JWT handling.",
+      "tags": ["auth", "jwt", "session", "login", "signup", "oauth"]
+    }
+  ]
+}
+```
+
+Claude self-selects context rather than following a hand-coded routing table. This is more precise than keyword matching and requires zero infrastructure. The manifest scales gracefully — a 40-file project is as navigable as a 10-file one because the selection intelligence lives in the model, not the routing rules.
+
+### Routing Intelligence
+
+Retrieval efficiency comes from four compounding mechanisms:
+
+1. **`manifest.json` self-selection** — Claude reads the manifest at session open and self-selects the 1–3 most relevant domain files. Selection intelligence lives in the model, not in hand-coded routing rules. Improves as manifest summaries and tags are refined by the sync agent.
+
+2. **`relevant_files` in sync.json** — the spec engine populates this array per task so each task carries the exact domain files it needs. Early specs require judgment from the spec engine; later specs are easier to populate correctly because domain boundaries are clearer and files have more signal.
+
+3. **Domain file content quality** — improves continuously as the sync agent adds patterns and decisions, and splits or merges files to maintain signal density. A domain file at spec 10 is richer and more precise than at spec 1. Ralph stalls less because the context it loads is directly relevant.
+
+4. **decisions.md domain tags** — allow Claude to read only the last N decisions tagged for the relevant domain rather than the last N decisions globally. An API task reads the last 3 `api`-tagged decisions, not the last 5 of everything.
+
+These four mechanisms compound over time. By spec 10, the manifest is more precise, the domain files are richer, and `relevant_files` is populated with less ambiguity because domain boundaries are clearer. The system gets better at loading the right context as it accumulates knowledge of the project.
+
 ---
 
 ## Pillar 1a: Context Management Policy
@@ -129,6 +172,14 @@ If autocompact fires mid-session and the knowledge graph hasn't been updated, an
 or patterns from that session exist only in the compaction summary — ephemeral, lossy,
 gone when the session ends. The md files are the durable record. The conversation is
 disposable working memory. Compaction is only safe when the two are in sync.
+
+### autoCompactThreshold Verification
+
+The `/plan` skill writes `autoCompactThreshold: 0.5` to `.claude/settings.json`. This
+setting must be verified at plan time — if the key is missing or malformed the invariant
+breaks silently. The `/plan` skill's settings verification step (step 7) must read back
+the file after writing and confirm the key is present with value `0.5`. If Claude Code's
+expected key name or format changes across versions, the template must be updated.
 
 ### Mechanism: PreCompact Hook
 
@@ -187,6 +238,21 @@ The sync agent evaluates whether any of these occurred before writing anything:
 If none of these signals are present, the sync agent exits silently and autocompact
 proceeds. Nothing is written. No commit is made.
 
+### brief.md as Living Scope Document
+
+`brief.md` is not a static input. It must stay current with the project's actual scope.
+Two moments trigger an update:
+
+1. **Post-planning** — the `/plan` skill updates `brief.md` after Phase 3 confirmation to
+   reflect any scope decisions, constraints, or out-of-scope items that emerged during the
+   planning conversation but weren't in the original brief.
+2. **Scope change in session** — if the sync agent detects that the project's scope or
+   definition changed (signal 3 above), it updates `brief.md` in addition to the relevant
+   domain file.
+
+`brief.md` is the canonical record of what the project is meant to do. The QC loop (see
+Pillar 3) reads it directly when evaluating completion.
+
 ---
 
 ## Pillar 1b: The Sync Agent (`knowledge-graph-sync`)
@@ -205,7 +271,9 @@ After each hook event, the sync agent answers one question:
 
 If no → silent. Nothing written. No commit.
 If yes → identifies the right file, writes the update, logs a decision if a choice was
-made, updates wikilinks, commits.
+made, references related files by path in prose (e.g. "see docs/claude/decisions.md#031"), commits.
+
+Whenever the sync agent creates, splits, merges, or meaningfully updates a domain file, it also updates `manifest.json` — the summary and tags for that file. The manifest is always current because it is updated in the same commit as the file change that warrants it.
 
 **Conversation-decision mode:** The agent recognizes when a long exploratory conversation
 has reached a conclusion and persists that decision *before* code is written. This is the
@@ -239,7 +307,7 @@ of the sync agent benefits from Opus advisory without any additional configurati
 
 | Role | Model | Handles |
 |------|-------|---------|
-| Executor | Sonnet 4.6 | Reading context, writing md files, formatting decisions, updating wikilinks |
+| Executor | Sonnet 4.6 | Reading context, writing md files, formatting decisions, adding cross-file path references |
 | Advisor | Opus 4.6 | Judging whether something is worth persisting, recognizing conversational closure, resolving ambiguous domain file placement |
 
 ### Escalation Trigger Instructions
@@ -255,8 +323,8 @@ escalates to Opus when:
   before code is written
 - Detecting that an existing assumption in the md files has been invalidated
 
-For everything else — writing the markdown, formatting the decision entry, updating
-wikilinks — Sonnet handles it without escalation.
+For everything else — writing the markdown, formatting the decision entry, adding
+cross-file path references — Sonnet handles it without escalation.
 
 ---
 
@@ -272,9 +340,8 @@ wikilinks — Sonnet handles it without escalation.
 2. Has a clarifying conversation (3–5 exchanges) to resolve ambiguities
 3. Determines which md files are warranted — no speculative file creation
 4. Generates `CLAUDE.md` router + initial domain file set
-5. Scaffolds the Obsidian vault config
-6. Creates the first `decisions.md` bootstrap entry
-7. Makes the first git commit: `[claude-docs] bootstrap — initial knowledge graph from brief`
+5. Creates the first `decisions.md` bootstrap entry
+6. Makes the first git commit: `[claude-docs] bootstrap — initial knowledge graph from brief`
 
 The clarifying conversation is load-bearing. Ambiguities resolved here prevent wrong
 assumptions from propagating through every subsequent spec and task.
@@ -347,6 +414,8 @@ The conversation runs in three phases:
 
 **Phase 3 — Decomposition** (internal, no back-and-forth)
 - Generates atomic tasks with Verify lines and relevant_files annotations
+- Updates `brief.md` to reflect any scope decisions, constraints, or out-of-scope items
+  that emerged during Phases 1–2 but weren't in the original brief
 
 ### Atomic Task Format
 
@@ -445,44 +514,32 @@ limitation; it is the design. Fresh context per task means no context rot accumu
 within Ralph's execution loop. The knowledge graph provides continuity across sessions;
 the conversation history provides none and is intentionally discarded.
 
----
+### QC Loop (Post-Completion)
 
-## Obsidian Integration
+When Ralph exhausts all tasks in `tasks.md` (no unchecked `- [ ]` entries remain), it
+does not stop — it enters an automated QC loop before declaring the spec done.
 
-Obsidian is the **reading and navigation layer only**. It is not part of the execution
-pipeline. The agents write files, git tracks history, Ralph executes tasks. Obsidian makes
-the accumulated knowledge graph human-navigable.
+**Loop steps per iteration:**
 
-### What Obsidian Sees
+1. **Review** — run Claude against `brief.md` + the project codebase to identify gaps,
+   missing behaviors, or inconsistencies between what was built and what the brief specifies
+2. **Triage** — if no gaps are found, emit `[QC_COMPLETE]` and stop. The spec is done.
+3. **Task generation** — if gaps are found, append new tasks to `tasks.md` (continuing
+   the existing T-number sequence) and update `state/sync.json` with the first new task
+4. **Execute** — Ralph resumes normal task execution for the new tasks
+5. **Repeat** — after the new tasks complete, re-enter the QC loop from step 1
 
-`docs/claude/` is the vault. Every md file the agents write lands there. Wikilinks written
-by the sync agent render as clickable links and graph edges:
+This loop runs entirely autonomously. It terminates only when Claude finds no remaining
+gaps against the brief, or when a `TASK_BLOCKED` sentinel halts execution for human review.
 
-```markdown
-We switched to [[stack#supabase-ssr]] for session handling,
-replacing the standard client (see [[decisions#023]]).
-This affects [[architecture#middleware]] and [[conventions#data-fetching]].
-```
+**New sentinel:** `[QC_COMPLETE]` — emitted by the QC agent when review finds no gaps.
+This is distinct from `TASK_COMPLETE` and causes Ralph to exit cleanly.
 
-### What Obsidian Gives You
+**New file:** `scripts/qc-prompt.md` — the prompt template for the QC agent. Reads
+`brief.md`, surveys the codebase, and either emits `[QC_COMPLETE]` or outputs new task
+descriptions for Ralph to append to `tasks.md`.
 
-**Graph view as project health indicator:** Heavily linked nodes are load-bearing concepts.
-Isolated nodes after months are candidates for pruning. Clusters of decisions around one
-file indicate churn worth consolidating.
-
-**Backlinks for impact analysis:** Before starting a new spec, open any domain file and
-see every other file that references it. The blast radius of a change is visible before
-Ralph writes a single line.
-
-**A reading experience for agent-owned files:** Obsidian is explicitly read-only from the
-human's perspective. The vault convention is absolute: never edit `docs/claude/` files
-manually. Obsidian is for reading and navigating; the sync agent is for writing.
-
-### Vault Convention
-
-`.obsidian/` config is committed to the repo (core settings only). The rest is gitignored.
-The Dataview plugin can replace the manual decision counter in CLAUDE.md with a live
-query — worth enabling after the core system is stable.
+**Commit prefix for QC-added tasks:** `[ralph] QC-T### complete — <description>`
 
 ---
 
@@ -516,19 +573,21 @@ Commit message formats:
 - `[claude-docs] update api.md, stack.md — switched to tRPC`
 - `[claude-docs] create billing.md — new domain from billing spec`
 - `[ralph] T007 complete — stripe webhook handler`
+- `[ralph] QC-T008 complete — missing error state on signup form`
 
 ---
 
 ## Token Economics
 
 ```
-Session open:      CLAUDE.md loads                ~400 tokens
-Task identified:   1–2 relevant domain files      ~800 tokens each
-Decisions tail:    last 5 entries                 ~500 tokens
-──────────────────────────────────────────────────────────────
-Total overhead per session:                       ~2,500 tokens
+Session open:        CLAUDE.md loads                    ~200 tokens
+Manifest read:       full manifest (scales to 40 files) ~2,000 tokens
+Domain files loaded: 1–3 self-selected files            ~800 tokens each
+Decisions tail:      last N domain-tagged entries        ~300 tokens
+─────────────────────────────────────────────────────────────────────
+Total overhead per session:                             ~4,000 tokens (worst case)
 
-vs. bloated CLAUDE.md:                            ~8,000–15,000 tokens
+vs. bloated CLAUDE.md:                                  ~8,000–15,000 tokens
 ```
 
 **Compaction strategy:** Knowledge lives in the md files, not in conversation history.
@@ -549,6 +608,7 @@ as long as the sync agent ran before it fired.
 | New domain appears | Answer 1 question |
 | Conflicting decisions detected | Answer 1 question |
 | TASK_BLOCKED | Read reason, revise task or unblock |
+| QC loop gap found | Zero — Ralph adds tasks and continues |
 | Everything else | Zero |
 
 ---
@@ -587,14 +647,14 @@ determines the initial file set.
 
 1. `knowledge-graph-bootstrap` skill — brief → clarifying conversation → initial file graph → first commit
 2. `CLAUDE.md` router template
+2a. `manifest.json` schema + sync agent manifest-update responsibility
 3. `decisions.md` template + anchor/counter system
 4. `knowledge-graph-sync` agent — `PreCompact` hook, `SessionEnd` hook
 5. `.claude/settings.json` — hook configuration, 50% autocompact threshold
-6. Obsidian vault scaffold + `.obsidian/` core config
-7. Spec engine slash commands — constitution, specify, clarify, plan, tasks
-8. `sync.json` schema + `relevant_files` convention
-9. Ralph integration — `TASK_BLOCKED` structured format
-10. `init.sh` — bootstraps a new project from scratch end-to-end
+6. Spec engine slash commands — constitution, specify, clarify, plan, tasks
+7. `sync.json` schema + `relevant_files` convention
+8. Ralph integration — `TASK_BLOCKED` structured format
+9. `init.sh` — bootstraps a new project from scratch end-to-end
 
 ---
 
@@ -606,8 +666,7 @@ determines the initial file set.
 - **Advisor tool in non-interactive contexts:** The `/advisor` slash command is
   session-scoped and interactive only. If a future Claude Code release exposes advisor
   configuration as a CLI flag, scripted invocations could benefit from it. Worth watching.
-- **Dataview integration:** Obsidian's Dataview plugin can replace the manual decision
-  counter in CLAUDE.md with a live query. Worth enabling after the core system is stable.
+- **Routing table maintenance:** Resolved. The routing table has been eliminated from CLAUDE.md entirely. The manifest serves as the routing index and is maintained automatically by the sync agent. CLAUDE.md is now fully frozen — it never needs to change as the project grows.
 - **TASK_BLOCKED → spec revision loop:** Currently requires human intervention. A future
   iteration could have the spec engine ingest the block reason and automatically revise
   the task decomposition.

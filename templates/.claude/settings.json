@@ -1,0 +1,25 @@
+{
+  "autoCompactThreshold": 0.5,
+  "hooks": {
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/sync-agent.sh"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/sync-agent.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

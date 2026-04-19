@@ -1,0 +1,13 @@
+{
+  "ralph": {
+    "task_id": null,
+    "task_title": "",
+    "relevant_files": [],
+    "last_sentinel": null,
+    "last_updated": null,
+    "session": 1
+  },
+  "execution": {
+    "current_task_status": "idle"
+  }
+}

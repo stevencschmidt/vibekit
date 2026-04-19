@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /home/steven/vibekit/templates/.claude/skills/plan)",
+      "Bash(mkdir -p /home/steven/vibekit/templates/.claude/skills/knowledge-graph-sync)"
+    ]
+  }
+}

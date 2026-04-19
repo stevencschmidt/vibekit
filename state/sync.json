@@ -1,0 +1,16 @@
+{
+  "ralph": {
+    "task_id": "T001",
+    "task_title": "Auto-populate verify_build() in /plan skill",
+    "relevant_files": [
+      "docs/claude/conventions.md",
+      "docs/claude/stack.md"
+    ],
+    "last_sentinel": null,
+    "last_updated": null,
+    "session": 1
+  },
+  "execution": {
+    "current_task_status": "idle"
+  }
+}
