@@ -25,6 +25,42 @@ Also read the current state of all files in `docs/claude/`.
 
 ---
 
+## Step 1.5 — Structured Delta Checks
+
+Before checking for free-form signals, run structured comparisons against known manifest files and source imports. These checks catch stack-level changes that a large diff may bury.
+
+**1. Manifest file vs stack.md**
+
+Check whether any of these files appear in `git diff HEAD`:
+- `requirements.txt` or `pyproject.toml` (Python)
+- `package.json` (Node)
+- `go.mod` (Go)
+- `Cargo.toml` (Rust)
+
+If any changed:
+1. Parse the current version of the changed manifest to list all declared packages/dependencies.
+2. Read `docs/claude/stack.md`.
+3. Compare:
+   - Any package in the manifest **not listed** in stack.md → mandatory write signal (new dependency, renamed, or version-critical change)
+   - Any package in stack.md **not in the manifest** → mandatory write signal (dependency removed)
+
+**2. Imports vs documented deps**
+
+For each changed source file (`*.py`, `*.ts`, `*.js`, `*.go`, `*.rs`):
+1. Extract top-level import statements from the current version of the file.
+2. Compare against the packages listed in `docs/claude/stack.md`.
+3. A top-level import of an undocumented package → mandatory write signal.
+
+**3. Act on structured signals**
+
+If any check above fires:
+- Treat it as a confirmed write signal — proceed to Step 3. Do **not** exit silently even if Step 2 finds no free-form signals.
+- Update `docs/claude/stack.md` to reflect current reality: add new packages, remove removed ones, note version or name changes.
+
+If no structured checks fire, continue to Step 2.
+
+---
+
 ## Step 2 — Check for Signals
 
 Evaluate whether any of these four signals are present in the session's changes:
