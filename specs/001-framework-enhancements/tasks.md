@@ -3,7 +3,7 @@
 - [x] T001 · Auto-populate verify_build() in /plan skill
 - [x] T002 · Structured delta checks in sync agent
 - [x] T003 · Implement manifest.json end-to-end
-- [ ] T004 · Checkpoint QC triggers in ralph.sh
+- [x] T004 · Checkpoint QC triggers in ralph.sh
 
 ---
 

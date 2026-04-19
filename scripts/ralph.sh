@@ -465,6 +465,9 @@ RATE_LIMIT_WAITS=0
 HANDOFF_TASK=""        # Set when SESSION_HANDOFF fires — tells next iteration it's a continuation
 QC_ROUND=0             # Counts QC loop iterations (post task-completion review)
 MAX_QC_ROUNDS=5        # Safety cap — stops runaway QC loops
+TASKS_SINCE_CHECKPOINT=0    # Incremented after each successful safety_commit; reset after checkpoint QC
+CHECKPOINT_QC_ROUND=0       # Counts checkpoint QC rounds for [CKPT-N] log tags
+: "${CHECKPOINT_QC_EVERY:=3}" # Default: fire checkpoint QC every 3 completed tasks; 0 disables
 
 while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
   ITERATION=$((ITERATION + 1))
@@ -764,6 +767,81 @@ if m:
         echo "[$ITERATION] Advanced to $_next_task_id: $(date)" >> "$LOG_FILE"
       else
         sync_write "ralph.task_id" "null" 2>/dev/null || true
+      fi
+
+      # --- Checkpoint QC ---
+      TASKS_SINCE_CHECKPOINT=$((TASKS_SINCE_CHECKPOINT + 1))
+      if [[ "${CHECKPOINT_QC_EVERY:-3}" -gt 0 && \
+            $TASKS_SINCE_CHECKPOINT -ge "${CHECKPOINT_QC_EVERY:-3}" ]]; then
+        _ckpt_remaining=0
+        _ckpt_spec="${SPEC_TASKS_FILE:-}"
+        if [[ -n "$_ckpt_spec" && -f "$_ckpt_spec" ]]; then
+          _ckpt_remaining=$($PYTHON -c "
+import sys, re
+with open(sys.argv[1]) as f: content = f.read()
+print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
+" "$_ckpt_spec" 2>/dev/null || echo "0")
+        fi
+        if [[ $_ckpt_remaining -ge 2 ]]; then
+          CHECKPOINT_QC_ROUND=$((CHECKPOINT_QC_ROUND + 1))
+          _CKPT_QC_PROMPT="${QC_PROMPT:-$PROJECT_ROOT/scripts/qc-prompt.md}"
+          _CKPT_BRIEF_FILE="${BRIEF_FILE:-$PROJECT_ROOT/brief.md}"
+          echo ""
+          echo "─────────────────────────────────────────"
+          echo "  Checkpoint QC $CHECKPOINT_QC_ROUND — reviewing after $TASKS_SINCE_CHECKPOINT tasks"
+          echo "─────────────────────────────────────────"
+          echo "[CKPT-$CHECKPOINT_QC_ROUND] Starting checkpoint QC: $(date)" >> "$LOG_FILE"
+          if [[ "$SKIP_QC" != "true" && -f "$_CKPT_QC_PROMPT" && -f "$_CKPT_BRIEF_FILE" ]]; then
+            if ! check_usage_before_iteration "CKPT-$CHECKPOINT_QC_ROUND"; then
+              RATE_LIMIT_WAITS=$((RATE_LIMIT_WAITS + 1))
+              if [[ $RATE_LIMIT_WAITS -ge $MAX_RATE_LIMIT_WAITS ]]; then
+                echo "STOPPED: Hit rate limit $MAX_RATE_LIMIT_WAITS consecutive times."
+                echo "=== Stopped: rate limit wait cap ($MAX_RATE_LIMIT_WAITS) at $(date) ===" >> "$LOG_FILE"
+                exit 1
+              fi
+              wait_for_reset "CKPT-$CHECKPOINT_QC_ROUND" "pre-check"
+            fi
+            _CKPT_RUN_PROMPT="Read $_CKPT_QC_PROMPT and review the project against $_CKPT_BRIEF_FILE."
+            _TMPOUT=$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ralph_ckpt_$$")
+            if [[ "$TOOL" == "claude" ]]; then
+              claude --dangerously-skip-permissions --print \
+                --model "$MODEL" "$_CKPT_RUN_PROMPT" \
+                2>&1 | tee "$_TMPOUT" || true
+            else
+              echo "$_CKPT_RUN_PROMPT" \
+                | amp --dangerously-allow-all 2>&1 | tee "$_TMPOUT" || true
+            fi
+            CKPT_OUTPUT=$(cat "$_TMPOUT" 2>/dev/null || echo "")
+            rm -f "$_TMPOUT" 2>/dev/null || true
+
+            if is_rate_limited_output "$CKPT_OUTPUT"; then
+              RATE_LIMIT_WAITS=$((RATE_LIMIT_WAITS + 1))
+              if [[ $RATE_LIMIT_WAITS -ge $MAX_RATE_LIMIT_WAITS ]]; then
+                echo "STOPPED: Hit rate limit $MAX_RATE_LIMIT_WAITS consecutive times."
+                echo "=== Stopped: rate limit wait cap ($MAX_RATE_LIMIT_WAITS) at $(date) ===" >> "$LOG_FILE"
+                exit 1
+              fi
+              wait_for_reset "CKPT-$CHECKPOINT_QC_ROUND" "mid-execution"
+              echo "[CKPT-$CHECKPOINT_QC_ROUND] Rate limited — counter not reset; will retry after next task: $(date)" >> "$LOG_FILE"
+              # Don't reset TASKS_SINCE_CHECKPOINT — will retry on next completed task
+            else
+              RATE_LIMIT_WAITS=0
+              if echo "$CKPT_OUTPUT" | grep -q "\[QC_COMPLETE\]"; then
+                echo ""
+                echo "  ✓ Checkpoint QC $CHECKPOINT_QC_ROUND — no gaps found"
+                echo "[CKPT-$CHECKPOINT_QC_ROUND] QC_COMPLETE — no gaps: $(date)" >> "$LOG_FILE"
+              else
+                _ckpt_new_task=$(sync_read "ralph.task_id" 2>/dev/null || echo "")
+                echo "  Checkpoint QC $CHECKPOINT_QC_ROUND identified gaps — resuming with ${_ckpt_new_task:-next task}"
+                echo "[CKPT-$CHECKPOINT_QC_ROUND] Gaps found, resuming with ${_ckpt_new_task:-next task}: $(date)" >> "$LOG_FILE"
+              fi
+              TASKS_SINCE_CHECKPOINT=0
+            fi
+          else
+            echo "[CKPT-$CHECKPOINT_QC_ROUND] Skipped (SKIP_QC or missing files): $(date)" >> "$LOG_FILE"
+            TASKS_SINCE_CHECKPOINT=0
+          fi
+        fi
       fi
 
       # Reset both counters on clean success
