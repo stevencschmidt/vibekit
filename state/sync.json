@@ -1,12 +1,13 @@
 {
   "ralph": {
-    "task_id": "T002",
-    "task_title": "Structured delta checks in sync agent",
+    "task_id": "T003",
+    "task_title": "Implement manifest.json end-to-end",
     "relevant_files": [
-      "docs/claude/architecture.md"
+      "docs/claude/architecture.md",
+      "knowledge-graph-brief.md"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T002]",
-    "last_updated": "2026-04-19T20:51:14Z",
+    "last_sentinel": "[TASK_COMPLETE: T003]",
+    "last_updated": "2026-04-19T20:55:46Z",
     "session": 1
   },
   "execution": {
