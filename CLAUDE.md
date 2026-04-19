@@ -26,7 +26,7 @@ Load the relevant file(s) for your current task. Do not load all files.
 
 ## Decision Log
 
-Total decisions: 002
+Total decisions: 003
 
 Read the last 5 entries from `docs/claude/decisions.md` when making architectural choices.
 

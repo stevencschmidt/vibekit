@@ -1,0 +1,19 @@
+{
+  "files": [
+    {
+      "path": "docs/claude/architecture.md",
+      "summary": "System architecture, component structure, data flow, and boundary decisions for this project.",
+      "tags": ["architecture", "design", "boundaries", "components", "structure"]
+    },
+    {
+      "path": "docs/claude/conventions.md",
+      "summary": "Code style, naming conventions, patterns, and error handling standards used throughout the project.",
+      "tags": ["conventions", "style", "patterns", "naming", "error-handling"]
+    },
+    {
+      "path": "docs/claude/stack.md",
+      "summary": "Dependencies, frameworks, libraries, tooling, and version constraints for this project.",
+      "tags": ["dependencies", "libraries", "tooling", "versions", "stack", "packages"]
+    }
+  ]
+}

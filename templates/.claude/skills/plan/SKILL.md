@@ -133,6 +133,7 @@ Verify:  <verify command>
 
 Knowledge graph:
   CLAUDE.md                    ← router (update)
+  docs/claude/manifest.json    ← routing index (update)
   docs/claude/architecture.md  ← existing | new
   docs/claude/conventions.md   ← existing | new
   docs/claude/stack.md         ← existing | new
@@ -157,14 +158,45 @@ Execute these steps in order:
 
 ### 1. Write/update CLAUDE.md router
 
-If first run: create `CLAUDE.md` from the template. Fill in project name, description, routing table, quick facts.
-If existing: update the routing table if new domain files are being added.
+If first run: create `CLAUDE.md` from the template. Fill in project name, description, and quick facts. The routing table is replaced by `docs/claude/manifest.json` — do not add a routing table to CLAUDE.md.
+If existing: do not add routing table rows. `manifest.json` is the routing index.
 
 ### 2. Write/update domain files
 
 For each domain file in the plan:
 - If new: create from the template in `docs/claude/` with relevant content from the brief and spec conversation
 - If existing: add only new content warranted by this spec (do not overwrite existing content)
+
+### 2a. Write/update manifest.json
+
+Maintain `docs/claude/manifest.json` — the machine-readable index of every domain file.
+
+**First run:** Create `docs/claude/manifest.json` with an entry for every domain file you just created:
+```json
+{
+  "files": [
+    {
+      "path": "docs/claude/architecture.md",
+      "summary": "<one-line summary of what this file covers>",
+      "tags": ["architecture", "design", "boundaries"]
+    },
+    {
+      "path": "docs/claude/conventions.md",
+      "summary": "<one-line summary>",
+      "tags": ["conventions", "style", "patterns", "naming"]
+    },
+    {
+      "path": "docs/claude/stack.md",
+      "summary": "<one-line summary>",
+      "tags": ["dependencies", "libraries", "tooling", "stack"]
+    }
+  ]
+}
+```
+
+Write a specific, accurate summary for each file based on its actual content. Tags should reflect the keywords a future session would use when searching for context relevant to that domain.
+
+**Subsequent runs:** If new domain files were added in step 2, append their entries to the `files` array. Do not modify entries for existing files.
 
 ### 3. Write decisions.md bootstrap entry (first run only)
 

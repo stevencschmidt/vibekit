@@ -103,7 +103,7 @@ cp "$VIBEKIT_DIR/templates/state/session-log.json"  "$TARGET_DIR/state/session-l
 cp "$VIBEKIT_DIR/templates/state/decisions.md"      "$TARGET_DIR/state/decisions.md"
 
 # docs/claude domain stubs (only if they don't exist — don't overwrite on re-init)
-for f in decisions.md architecture.md conventions.md stack.md; do
+for f in decisions.md architecture.md conventions.md stack.md manifest.json; do
   if [[ ! -f "$TARGET_DIR/docs/claude/$f" ]]; then
     cp "$VIBEKIT_DIR/templates/docs/claude/$f" "$TARGET_DIR/docs/claude/$f"
     # Substitute PROJECT_NAME in decisions.md

@@ -6,15 +6,7 @@
 
 ## Domain Files
 
-Load the relevant file(s) for your current task. Do not load all files.
-
-| When working on... | Load |
-|--------------------|------|
-| Architecture, system design, component boundaries | `docs/claude/architecture.md` |
-| Code style, naming, patterns, error handling | `docs/claude/conventions.md` |
-| Dependencies, frameworks, tooling, versions | `docs/claude/stack.md` |
-
-Add rows as new domain files are created by the sync agent.
+Before starting any task, read `docs/claude/manifest.json`. Based on the task at hand, identify the 1–3 most relevant domain files. Read only those files. State which files you loaded and why.
 
 ---
 

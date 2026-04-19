@@ -78,7 +78,7 @@ Evaluate whether any of these four signals are present in the session's changes:
 
 If one or more signals are present:
 
-1. **Identify the right domain file.** Load the routing table from `CLAUDE.md` to find the best home. If ambiguous between two files, prefer the more specific one. If no existing file fits, consider creating a new one (only if the domain is genuinely distinct).
+1. **Identify the right domain file.** Read `docs/claude/manifest.json` to find the best home for the update. If ambiguous between two files, prefer the more specific one. If no existing file fits, consider creating a new one (only if the domain is genuinely distinct).
 
 2. **Write the update.** Be concise. Add to the relevant section. Do not rewrite existing content — append or insert only.
 
@@ -97,9 +97,26 @@ If one or more signals are present:
 
    Increment the counter in the `Total decisions:` line in `decisions.md` and in `CLAUDE.md`.
 
-4. **Add cross-file references** in prose where relevant (e.g. "see docs/claude/decisions.md#031").
+4. **Update manifest.json.** Whenever you create, split, merge, or meaningfully update a domain file, update its entry in `docs/claude/manifest.json` in the same commit:
+   - **New file:** append a new entry to the `files` array with an accurate `summary` and `tags`.
+   - **Split:** replace the old entry with two new entries, one per new file.
+   - **Merge:** remove the merged file's entry; update the target file's entry if its summary changed.
+   - **Meaningful content update:** update the `summary` and/or `tags` for that file's entry if they no longer accurately describe its current content.
 
-5. **Commit** with:
+   The manifest entry format:
+   ```json
+   {
+     "path": "docs/claude/<file>.md",
+     "summary": "<one-line description of what this file covers>",
+     "tags": ["keyword1", "keyword2", "keyword3"]
+   }
+   ```
+
+   Keep summaries specific and accurate — they are what Claude reads to decide whether to load a file. Vague summaries degrade retrieval quality.
+
+5. **Add cross-file references** in prose where relevant (e.g. "see docs/claude/decisions.md#031").
+
+6. **Commit** with:
    ```
    [claude-docs] update <filename> — <brief reason>
    ```
@@ -117,14 +134,14 @@ After any write (or independently if no write was triggered), check the size of 
 **Split if oversized:** If any file exceeds ~300 lines, it has become a catch-all and is degrading retrieval precision. Propose splitting it:
 1. Identify the two natural sub-domains within the file
 2. Create two new files with the split content
-3. Update the routing table in `CLAUDE.md` to reference both new files
+3. Update `docs/claude/manifest.json` — replace the old entry with two new entries
 4. Commit the old file *before* deleting it so it remains in git history
-5. Commit the two new files and the updated `CLAUDE.md`
+5. Commit the two new files and the updated `manifest.json`
 6. Commit message: `[claude-docs] split <old-file> → <new1>, <new2> — domain separated`
 
 **Merge if too small:** If any file has fewer than ~15 lines of real content and hasn't grown after multiple sessions, it isn't earning its routing overhead. Fold it into the most related file:
 1. Move the content into the appropriate sibling file
-2. Update `CLAUDE.md` routing table to remove the stale entry
+2. Update `docs/claude/manifest.json` — remove the merged file's entry, update the target file's entry
 3. Commit: `[claude-docs] merge <small-file> into <target> — insufficient domain mass`
 
 Do not split or merge speculatively — only act when the threshold is clearly crossed.
@@ -139,4 +156,5 @@ Do not split or merge speculatively — only act when the threshold is clearly c
 - Do not modify `state/sync.json` or `state/decisions.md` — those are Ralph's files
 - Do not emit any output if you write nothing — silence is correct behavior when no signals are present
 - Do not block on errors — if a write fails, exit 0 anyway
-- **Do not write content into `CLAUDE.md`.** CLAUDE.md is a router only. The only permitted mutations are: adding a row to the routing table when a new domain file is created, and incrementing the `Total decisions:` counter. All other content belongs in a domain file. If no existing domain file fits, create a new one.
+- **Do not write content into `CLAUDE.md`.** CLAUDE.md is a router only. The only permitted mutations are: incrementing the `Total decisions:` counter. All other content belongs in a domain file. If no existing domain file fits, create a new one.
+- **Always update `manifest.json`** when creating, splitting, merging, or meaningfully updating a domain file. The manifest and domain files must stay in sync.
