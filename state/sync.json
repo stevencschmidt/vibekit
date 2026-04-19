@@ -1,13 +1,12 @@
 {
   "ralph": {
-    "task_id": "T003",
-    "task_title": "Implement manifest.json end-to-end",
+    "task_id": "T004",
+    "task_title": "Checkpoint QC triggers in ralph.sh",
     "relevant_files": [
-      "docs/claude/architecture.md",
-      "knowledge-graph-brief.md"
+      "docs/claude/conventions.md"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T003]",
-    "last_updated": "2026-04-19T20:55:46Z",
+    "last_sentinel": "[TASK_COMPLETE: T004]",
+    "last_updated": "2026-04-19T20:58:09Z",
     "session": 1
   },
   "execution": {
