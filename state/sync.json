@@ -1,13 +1,12 @@
 {
   "ralph": {
-    "task_id": "T006",
-    "task_title": "Split tasks.md \u2014 completed bodies move to tasks-archive.md",
+    "task_id": "T007",
+    "task_title": "Split brief.md + drift check in completion QC",
     "relevant_files": [
-      "docs/claude/architecture.md",
-      "docs/claude/conventions.md"
+      "docs/claude/architecture.md"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T006]",
-    "last_updated": "2026-05-04T20:58:15Z",
+    "last_sentinel": "[TASK_COMPLETE: T007]",
+    "last_updated": "2026-05-04T20:59:58Z",
     "session": 1
   },
   "execution": {
