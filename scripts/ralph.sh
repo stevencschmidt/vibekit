@@ -351,9 +351,9 @@ safety_commit() {
   echo "  ⚠ Uncommitted changes detected — creating safety commit"
   git -C "$PROJECT_ROOT" add -A
   git -C "$PROJECT_ROOT" commit \
-    -m "Ralph safety commit: $task_id completed (Claude did not commit)" \
+    -m "Ralph post-complete fallback commit: $task_id (Claude did not commit)" \
     2>/dev/null || true
-  echo "[$ITERATION] SAFETY COMMIT for $task_id — Claude did not commit: $(date)" >> "$LOG_FILE"
+  echo "[$ITERATION] POST-COMPLETE FALLBACK COMMIT for $task_id — Claude did not commit: $(date)" >> "$LOG_FILE"
 }
 
 # === Effective Prompt (with SKILLS_CONTEXT substituted) ===
@@ -546,6 +546,15 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
       echo ""
       echo "QC complete — no gaps found against brief.md."
       echo "=== QC_COMPLETE at $(date) (round $QC_ROUND) ===" >> "$LOG_FILE"
+      _qc_end_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+      if [[ ${#TASKS_COMPLETED_SESSION[@]} -gt 0 ]]; then
+        _qc_tasks_json=$($PYTHON -c "import sys, json; print(json.dumps(sys.argv[1:]))" \
+          "${TASKS_COMPLETED_SESSION[@]}" 2>/dev/null || echo "[]")
+      else
+        _qc_tasks_json="[]"
+      fi
+      session_log_append "ralph" "$RALPH_SESSION" "$SESSION_START_ISO" "$_qc_end_iso" \
+        "QC_COMPLETE" "0" "$_qc_tasks_json" 2>/dev/null || true
       exit 0
     fi
 
@@ -556,6 +565,11 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
       echo "QC ran but found no new tasks and did not emit [QC_COMPLETE]."
       echo "Check $LOG_FILE and review scripts/qc-prompt.md."
       echo "=== Stopped: QC stalled at $(date) ===" >> "$LOG_FILE"
+      echo "[QC-$QC_ROUND] QC stalled — last 80 lines of QC output:" >> "$LOG_FILE"
+      echo "$QC_OUTPUT" | tail -n 80 >> "$LOG_FILE"
+      echo "[QC-$QC_ROUND] --- end QC output ---" >> "$LOG_FILE"
+      session_log_append "ralph" "$RALPH_SESSION" "$SESSION_START_ISO" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        "QC_STALL" "0" "[]" 2>/dev/null || true
       exit 1
     fi
 
@@ -708,6 +722,8 @@ except Exception: pass
       echo "  ✓ $TASK_ID complete (verified)"
       safety_commit "$TASK_ID"
       TASKS_COMPLETED_SESSION+=("$TASK_ID")
+      session_log_append "ralph" "$RALPH_SESSION" "$SESSION_START_ISO" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        "TASK_COMPLETE" "0" "[\"${TASK_ID}\"]" 2>/dev/null || true
 
       # Mark task complete in tasks.md (fallback if Ralph didn't mark the checkbox)
       _spec_tasks="${SPEC_TASKS_FILE:-}"
@@ -859,6 +875,11 @@ print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
                 echo "[CKPT-$CHECKPOINT_QC_ROUND] QC_COMPLETE — no gaps: $(date)" >> "$LOG_FILE"
               else
                 _ckpt_new_task=$(sync_read "ralph.task_id" 2>/dev/null || echo "")
+                if [[ -z "$_ckpt_new_task" || "$_ckpt_new_task" == "null" ]]; then
+                  echo "[CKPT-$CHECKPOINT_QC_ROUND] QC stalled — last 80 lines of QC output:" >> "$LOG_FILE"
+                  echo "$CKPT_OUTPUT" | tail -n 80 >> "$LOG_FILE"
+                  echo "[CKPT-$CHECKPOINT_QC_ROUND] --- end QC output ---" >> "$LOG_FILE"
+                fi
                 echo "  Checkpoint QC $CHECKPOINT_QC_ROUND identified gaps — resuming with ${_ckpt_new_task:-next task}"
                 echo "[CKPT-$CHECKPOINT_QC_ROUND] Gaps found, resuming with ${_ckpt_new_task:-next task}: $(date)" >> "$LOG_FILE"
               fi
@@ -898,6 +919,8 @@ print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
         echo "The code compiles/runs but fails the quality check."
         echo "Review the verification output above and check $LOG_FILE."
         echo "=== Stopped: $TASK_ID verify-failed 3x at $(date) ===" >> "$LOG_FILE"
+        session_log_append "ralph" "$RALPH_SESSION" "$SESSION_START_ISO" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          "BUILD_FAIL" "0" "[]" 2>/dev/null || true
         exit 1
       fi
       echo "  Retrying ($BUILD_FAIL_COUNT/3 verification attempts)..."
@@ -928,6 +951,8 @@ print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
       echo ""
       echo "Check $LOG_FILE and $SYNC_FILE for details."
       echo "=== Stopped: $TASK_ID stalled 3x at $(date) ===" >> "$LOG_FILE"
+      session_log_append "ralph" "$RALPH_SESSION" "$SESSION_START_ISO" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        "STALL" "0" "[]" 2>/dev/null || true
       exit 1
     fi
 
@@ -942,4 +967,6 @@ echo "Reached max iterations ($MAX_ITERATIONS)."
 echo "Run ralph again to continue, or increase --max."
 echo "Check $LOG_FILE and $SYNC_FILE for status."
 echo "=== Stopped at max iterations: $(date) ===" >> "$LOG_FILE"
+session_log_append "ralph" "$RALPH_SESSION" "$SESSION_START_ISO" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  "MAX_ITER" "0" "[]" 2>/dev/null || true
 exit 1

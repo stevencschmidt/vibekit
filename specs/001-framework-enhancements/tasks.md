@@ -7,7 +7,7 @@
 - [x] T005 · Make sync-agent.sh non-blocking (auto-compact fix)
 - [x] T006 · Split tasks.md — completed bodies move to tasks-archive.md
 - [x] T007 · Split brief.md + drift check in completion QC
-- [ ] T008 · session_log_append coverage + QC stall diagnostic + commit hygiene
+- [x] T008 · session_log_append coverage + QC stall diagnostic + commit hygiene
 - [ ] T009 · Document new conventions in domain files
 
 ---
