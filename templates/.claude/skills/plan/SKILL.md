@@ -144,6 +144,8 @@ Settings:
   PreCompact hook: sync-agent.sh  ✓
   SessionEnd hook: sync-agent.sh  ✓
 
+Brief: trim to current scope (Y/n)   ← only shown if scope shift detected
+
 ──────────────────────────────────────
 Ready to generate? (yes / adjust)
 ```
@@ -286,6 +288,16 @@ Update `brief.md` to reflect any scope decisions, constraints, or out-of-scope i
 emerged during the planning conversation (Phases 1–2) but were not in the original brief.
 Do not rewrite the brief — append or correct only what changed. If the brief already
 accurately reflects the agreed scope, skip this step.
+
+When this is a **new spec** or a **significant scope shift** (prior brief content becomes
+obsolete), ask the user before rewriting `brief.md`:
+
+> "The planning conversation has shifted scope significantly. Trim `brief.md` to current
+> scope only and archive the prior content to `brief-archive.md`? (Y/n)"
+
+If they confirm, append the prior `brief.md` content to `brief-archive.md` with a
+`## Archived <YYYY-MM-DD>: <reason>` header, then write the trimmed `brief.md`.
+For simple fix tasks or minor additions, leave `brief.md` unchanged.
 
 ### 7. Update SPEC_TASKS_FILE in vibekit.config.sh
 

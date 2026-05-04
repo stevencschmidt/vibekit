@@ -34,6 +34,21 @@ List all missing and partial items.
 
 ---
 
+## Step 3a — Brief Drift Check (completion QC only)
+
+If `brief-archive.md` exists in the project root, read it after `brief.md`. Compare the two
+for contradictions — for example, a hard constraint listed in `brief-archive.md` that has
+been silently dropped from `brief.md` without a documented decision in `state/decisions.md`.
+
+If contradictions are found: treat them as gaps. Proceed to Step 4's "If gaps are found"
+path and append a task titled `## T### · Reconcile brief drift: <symptom>` to `tasks.md`
+(and update `state/sync.json`). Do not emit `[QC_COMPLETE]`.
+
+If no contradictions are found, or if `brief-archive.md` does not exist, proceed normally
+to Step 4.
+
+---
+
 ## Step 4 — Decision
 
 **If no gaps are found:**
