@@ -17,6 +17,7 @@
 [claude-docs]   knowledge graph updates (sync agent)
 [plan]          spec + task generation
 [ralph]         task completions
+[ralph] QC-T### complete — QC-identified gap fix
 ```
 
 These prefixes make git history queryable:
@@ -33,6 +34,35 @@ Claude emits exactly one sentinel at end of output, on its own line:
 [TASK_BLOCKED: <specific human-readable reason>]
 [SESSION_HANDOFF]
 ```
+
+The QC agent emits `[QC_COMPLETE]` (standalone, no T-id) when no gaps remain against `brief.md`. In checkpoint QC (mid-spec), `[QC_COMPLETE]` means "no gaps here, continue"; in completion QC it exits the run. See `scripts/qc-prompt.md`.
+
+## verify_build() Must Be Stack-Aware
+
+`verify_build()` is the only thing standing between a broken commit and `git push`. A `return 0` stub defeats Ralph's 3-strike protection entirely. The `/plan` skill is responsible for writing a stack-appropriate body at bootstrap:
+
+| Stack | Minimum verify |
+|-------|----------------|
+| Python | `python -c "import ast; ast.parse(open('<entry>').read())"` + importable entry check |
+| Node | `npx tsc --noEmit 2>/dev/null || true` + `node --check <entry>.js` |
+| Go | `go build ./...` |
+| Rust | `cargo check --quiet` |
+| Bash-only | `bash -n` on every `.sh` under `scripts/` |
+
+If no plausible verify exists, `/plan` must ask the user rather than write `return 0`.
+
+## Structured Delta Obligation (Sync Agent)
+
+The sync agent's `Step 1.5` runs before free-form signal sniffing:
+
+- Any change in `requirements.txt`, `package.json`, `go.mod`, `Cargo.toml`, or `pyproject.toml` vs. `stack.md` → mandatory write signal
+- Any top-level import of a package not documented in `stack.md` → mandatory write signal
+
+Structured signals cannot be silenced by the four-signal heuristic — they always trigger a `stack.md` update in the same commit.
+
+## Session Policy
+
+Interactive Claude Code sessions in a vibekit-scaffolded project are for planning and conversation only. Non-trivial implementation, fixes, or debugging go through `/plan` → Ralph, not inline. The policy lives in `templates/CLAUDE.md` under `## Session Policy` and is copied to every scaffolded project. The `/plan` skill ships a Fix/Debug mode for the `/plan <problem description>` invocation path.
 
 ## Skill Format
 

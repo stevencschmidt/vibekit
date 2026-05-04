@@ -6,19 +6,26 @@ A Claude Code knowledge graph system and autonomous execution toolkit. Solves co
 
 ## Domain Files
 
-Load the relevant file(s) for your current task. Do not load all files.
+Before starting any task, read `docs/claude/manifest.json`. Based on the task at hand, identify the 1–3 most relevant domain files. Read only those files. State which files you loaded and why.
 
-| When working on... | Load |
-|--------------------|------|
-| Pillar architecture, component structure, data flow, boundaries | `docs/claude/architecture.md` |
-| Script conventions, commit prefixes, sentinel protocol, skill format | `docs/claude/conventions.md` |
-| Dependencies, bash/python/claude CLI, tooling | `docs/claude/stack.md` |
+---
+
+## Session Policy
+
+This session is for planning and conversation only. Do not implement, fix, or debug code inline.
+
+When asked to build, fix, investigate, or debug anything non-trivial:
+1. Use `/plan` to generate Ralph tasks (new features) or `/plan <problem description>` (fixes/debugging)
+2. Run `bash scripts/ralph.sh` to execute
+
+**Exception:** Single-file edits requiring one tool call with no iteration (e.g. fixing a typo, updating a config value). Knowledge-graph reconciliation after a completed spec also qualifies.
 
 ---
 
 ## Quick Facts
 
 - **Run Ralph:** `bash scripts/ralph.sh [--tool claude|amp] [--model MODEL] [--max N] [--skip-qc] [--dry-run]`
+- **Checkpoint QC:** `CHECKPOINT_QC_EVERY=N bash scripts/ralph.sh` (default 3; set `0` to disable)
 - **Scaffold a project:** `./init.sh <target-dir> [project-name]`
 - **No build step, no package manager** — bash + python3 + claude CLI
 
@@ -26,7 +33,7 @@ Load the relevant file(s) for your current task. Do not load all files.
 
 ## Decision Log
 
-Total decisions: 003
+Total decisions: 004
 
 Read the last 5 entries from `docs/claude/decisions.md` when making architectural choices.
 

@@ -541,6 +541,24 @@ descriptions for Ralph to append to `tasks.md`.
 
 **Commit prefix for QC-added tasks:** `[ralph] QC-T### complete — <description>`
 
+### QC Loop (Checkpoint, Mid-Spec)
+
+Post-completion QC is not enough by itself — by the time all tasks are marked `[x]`,
+any architectural drift has been baked into every preceding commit. The ragtest pilot
+proved this: T002–T006 all ran against a broken SDK assumption and QC had to unwind
+retroactively. Checkpoint QC fires the same review mid-spec so drift is caught while
+the delta is still small.
+
+**Trigger:** `CHECKPOINT_QC_EVERY` environment variable (default `3`). After every N
+successful task commits, Ralph fires one checkpoint QC iteration provided ≥2 unchecked
+tasks still remain (otherwise the completion QC will catch it). Value `0` disables
+checkpoint QC entirely (original behavior).
+
+**Semantics:** Uses the same `qc-prompt.md`, `brief.md`, and `[QC_COMPLETE]` sentinel
+as completion QC. Log lines tagged `[CKPT-N]`. A checkpoint emitting `[QC_COMPLETE]`
+means "no gaps here, continue" — Ralph proceeds to the next scheduled task rather than
+exiting. Found gaps are appended to `tasks.md` and picked up on the next iteration.
+
 ---
 
 ## Git as Version Store

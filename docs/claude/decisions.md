@@ -1,6 +1,6 @@
 # Decision Log
 
-Total decisions: 003
+Total decisions: 004
 
 Append-only audit log. Each entry has an anchor for precise retrieval.
 
@@ -30,3 +30,13 @@ Append-only audit log. Each entry has an anchor for precise retrieval.
 - Files updated: templates/docs/claude/manifest.json (new), templates/CLAUDE.md, templates/.claude/skills/plan/SKILL.md, templates/.claude/skills/knowledge-graph-sync/SKILL.md, init.sh
 - Why: The static routing table doesn't scale past ~10 domain files and must be manually maintained. The manifest lets Claude self-select the right files at session open.
 - Considered but rejected: keyword-based routing (too imprecise); fuzzy vector search (infrastructure overkill for a markdown index)
+
+---
+
+<!-- DECISION:004 | domains: architecture, conventions -->
+## DECISION:004 — Checkpoint QC mid-spec
+
+- Files updated: scripts/ralph.sh
+- Why: ragtest pilot's QC loop only fired after all tasks were marked complete. By then, T002–T006 had run against a broken SDK assumption and QC had to unwind the damage retroactively. Mid-spec QC catches drift while the delta is still small.
+- How it works: `CHECKPOINT_QC_EVERY` env var (default 3) fires a QC round after every N completed tasks, provided ≥2 unchecked tasks remain. Tagged `[CKPT-N]` in logs. A checkpoint emitting `[QC_COMPLETE]` means "no gaps here, continue"; it does not end the run. Value `0` disables checkpoint QC (original behavior).
+- Considered but rejected: trigger on every task (too expensive, most tasks don't need review); trigger only on tasks touching requirements.txt or stack.md (too narrow — misses cross-file pattern drift)

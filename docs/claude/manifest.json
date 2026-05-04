@@ -1,0 +1,24 @@
+{
+  "files": [
+    {
+      "path": "docs/claude/architecture.md",
+      "summary": "Three-pillar architecture (Knowledge Graph, /plan, Ralph), component map, per-iteration flow, and key boundaries.",
+      "tags": ["architecture", "pillars", "components", "ralph", "sync-agent", "qc", "manifest", "boundaries"]
+    },
+    {
+      "path": "docs/claude/conventions.md",
+      "summary": "Script style, commit prefixes, sentinel protocol, skill format, verify_build() stack-awareness, structured delta obligation, session policy.",
+      "tags": ["conventions", "commit-prefixes", "sentinels", "verify-build", "skill-format", "session-policy", "structured-delta"]
+    },
+    {
+      "path": "docs/claude/stack.md",
+      "summary": "Runtime dependencies (bash, python3, claude CLI) and tooling assumptions for vibekit itself.",
+      "tags": ["dependencies", "bash", "python", "claude-cli", "tooling"]
+    },
+    {
+      "path": "docs/claude/decisions.md",
+      "summary": "Append-only architectural decision log with anchors. 004 entries covering distribution, verify_build, manifest.json, and checkpoint QC.",
+      "tags": ["decisions", "audit-log", "history", "rationale"]
+    }
+  ]
+}
