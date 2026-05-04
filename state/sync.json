@@ -1,12 +1,13 @@
 {
   "ralph": {
-    "task_id": "T004",
-    "task_title": "Checkpoint QC triggers in ralph.sh",
+    "task_id": "T005",
+    "task_title": "Make sync-agent.sh non-blocking (auto-compact fix)",
     "relevant_files": [
+      "docs/claude/architecture.md",
       "docs/claude/conventions.md"
     ],
     "last_sentinel": "[TASK_COMPLETE: T004]",
-    "last_updated": "2026-04-19T20:58:09Z",
+    "last_updated": "2026-05-04T14:05:27Z",
     "session": 1
   },
   "execution": {
