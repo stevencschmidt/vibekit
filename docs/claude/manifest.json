@@ -2,13 +2,13 @@
   "files": [
     {
       "path": "docs/claude/architecture.md",
-      "summary": "Three-pillar architecture (Knowledge Graph, /plan, Ralph), component map, per-iteration flow, and key boundaries.",
-      "tags": ["architecture", "pillars", "components", "ralph", "sync-agent", "qc", "manifest", "boundaries"]
+      "summary": "Three-pillar architecture (Knowledge Graph, /plan, Ralph), component map, per-iteration flow, tasks/brief archive split, sync-agent mode dispatch, and key boundaries.",
+      "tags": ["architecture", "pillars", "components", "ralph", "sync-agent", "qc", "manifest", "boundaries", "archive", "brief"]
     },
     {
       "path": "docs/claude/conventions.md",
-      "summary": "Script style, commit prefixes, sentinel protocol, skill format, verify_build() stack-awareness, structured delta obligation, session policy.",
-      "tags": ["conventions", "commit-prefixes", "sentinels", "verify-build", "skill-format", "session-policy", "structured-delta"]
+      "summary": "Script style, commit prefixes, sentinel protocol, skill format, verify_build() stack-awareness, structured delta obligation, archive file naming, sync hook arg convention, session policy.",
+      "tags": ["conventions", "commit-prefixes", "sentinels", "verify-build", "skill-format", "session-policy", "structured-delta", "archive", "sync-hook"]
     },
     {
       "path": "docs/claude/stack.md",
@@ -17,7 +17,7 @@
     },
     {
       "path": "docs/claude/decisions.md",
-      "summary": "Append-only architectural decision log with anchors. 004 entries covering distribution, verify_build, manifest.json, and checkpoint QC.",
+      "summary": "Append-only architectural decision log with anchors. 005 entries covering distribution, verify_build, manifest.json, checkpoint QC, and active/archive split.",
       "tags": ["decisions", "audit-log", "history", "rationale"]
     }
   ]

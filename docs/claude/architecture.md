@@ -48,8 +48,20 @@ Sentinel detection from Claude output strings:
 ### scripts/ralph-prompt.md
 The prompt template Claude reads each iteration. Contains task execution rules, sentinel protocol, and `{{SKILLS_CONTEXT}}` placeholder substituted at runtime.
 
+### tasks.md / tasks-archive.md Split
+
+`SPEC_TASKS_FILE` (e.g. `specs/001-slug/tasks.md`) holds the checkbox list and the bodies of **uncompleted** tasks only. After each verified task completion, `ralph.sh` moves the `## T###` body for that task to a sibling `tasks-archive.md` file (atomic write; header `# Archive: <spec-slug>` on first write). Readers that only need the checkbox list or the current task's body never load completed task descriptions. `tasks-archive.md` is available for historical reference but is not loaded by default.
+
+### brief.md / brief-archive.md Split
+
+The spec's `brief.md` describes the **current** scope. When `/plan` is invoked in Fix/Debug mode on an existing spec, it trims the brief to reflect the new scope and appends the old content to `brief-archive.md`. The completion QC checks for the existence of `brief-archive.md`; if present, it compares the archived brief against the current `brief.md` and appends a reconciliation task to `tasks.md` if it detects a contradiction (e.g. a removed requirement that was actually implemented).
+
 ### scripts/sync-agent.sh
-Hook runner. Invoked by `.claude/settings.json` PreCompact and SessionEnd hooks. Passes the knowledge-graph-sync skill content to `claude --print` as a sidecar process. The skill performs two detection passes per invocation:
+Hook runner. Invoked by `.claude/settings.json` PreCompact and SessionEnd hooks with a mode argument. Passes the knowledge-graph-sync skill content to `claude --print` as a sidecar process. Mode dispatch:
+- **`precompact`** (default): fire-and-forget (`& disown`). Hook returns in <500 ms so Claude Code's auto-compact is never blocked.
+- **`sessionend`**: best-effort with `timeout 10s`. Sync runs but cannot hang shutdown.
+
+The skill performs two detection passes per invocation:
 - **Structured delta checks** (`Step 1.5`) — compares `requirements.txt`/`package.json`/`go.mod`/`Cargo.toml`/`pyproject.toml` against `stack.md`, and compares source-file imports against documented deps; any mismatch is a mandatory write signal
 - **Free-form signal sniffing** (`Step 2`) — the original four signals (decision, pattern, understanding shift, explicit resolution); fallback when structured checks pass
 

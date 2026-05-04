@@ -89,6 +89,28 @@ trigger: /slash-command | internal
 | Claude Code skills | `.claude/skills/*/SKILL.md` | Slash commands for interactive sessions |
 | Vibekit domain skills | `skills/<name>/manifest.md` | Domain knowledge injected into ralph-prompt via `{{SKILLS_CONTEXT}}` |
 
+## Archive File Naming
+
+When `ralph.sh` or `/plan` splits a file into active + historical parts, the archive sibling is named `<base>-archive.md` in the same directory:
+
+| Active file | Archive file |
+|-------------|-------------|
+| `specs/<slug>/tasks.md` | `specs/<slug>/tasks-archive.md` |
+| `specs/<slug>/brief.md` | `specs/<slug>/brief-archive.md` |
+
+Archive files are append-only and prepended with a `# Archive: <spec-slug>` header on first write. They are not loaded by default during task execution.
+
+## Sync Hook Arg Convention
+
+`sync-agent.sh` takes a single positional arg indicating the hook context:
+
+```bash
+bash scripts/sync-agent.sh precompact   # PreCompact hook — fire-and-forget
+bash scripts/sync-agent.sh sessionend   # SessionEnd hook — timeout 10s, best-effort
+```
+
+Unknown or missing mode defaults to fire-and-forget for safety. This arg must be set in `.claude/settings.json`; the `/plan` skill writes it at bootstrap.
+
 ## Atomic Operations
 
 `sync_write` and `session_log_append` always write atomically (temp file + rename) to avoid corrupt state on crash.

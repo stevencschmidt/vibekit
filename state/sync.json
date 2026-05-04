@@ -1,8 +1,9 @@
 {
   "ralph": {
-    "task_id": "T008",
-    "task_title": "session_log_append coverage + QC stall diagnostic + commit hygiene",
+    "task_id": "T009",
+    "task_title": "Document new conventions in domain files",
     "relevant_files": [
+      "docs/claude/architecture.md",
       "docs/claude/conventions.md"
     ],
     "last_sentinel": "[TASK_COMPLETE: T008]",
