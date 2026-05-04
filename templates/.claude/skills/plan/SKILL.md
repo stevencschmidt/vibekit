@@ -255,6 +255,8 @@ Description...
 
 The checkbox list at the top is the progress tracker — Ralph marks `- [ ] T001` as `- [x] T001` when complete. The `##` sections are the full task descriptions Ralph reads and executes.
 
+As tasks complete, `ralph.sh` moves their `## T###` bodies to `tasks-archive.md`. `/plan` only writes to `tasks.md`.
+
 Rules for good tasks:
 - Each task has a single verifiable output
 - No implicit dependencies on uncommitted work

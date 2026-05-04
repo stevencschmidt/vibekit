@@ -723,6 +723,33 @@ try:
     with open(path, 'w') as f: f.write(content)
 except Exception: pass
 " "$_spec_tasks" "${TASK_ID}" 2>/dev/null || true
+
+        # Move completed task body to tasks-archive.md
+        $PYTHON -c "
+import sys, re, os
+path, tid = sys.argv[1], sys.argv[2]
+try:
+    with open(path, 'r') as f: content = f.read()
+    m = re.search(r'^(## ' + re.escape(tid) + r'\b[^\n]*\n.*?)(?=^## T|\Z)',
+                  content, re.MULTILINE | re.DOTALL)
+    if not m: sys.exit(0)
+    body = m.group(0)
+    new_content = content[:m.start()] + content[m.end():]
+    tmp = path + '.tmp'
+    with open(tmp, 'w') as f: f.write(new_content)
+    os.rename(tmp, path)
+    archive_path = os.path.join(os.path.dirname(path), 'tasks-archive.md')
+    slug = os.path.basename(os.path.dirname(path))
+    if not os.path.exists(archive_path):
+        archive_content = '# Archive: ' + slug + '\n\n' + body
+    else:
+        with open(archive_path, 'r') as f: existing = f.read()
+        archive_content = existing.rstrip('\n') + '\n\n' + body
+    tmp2 = archive_path + '.tmp'
+    with open(tmp2, 'w') as f: f.write(archive_content)
+    os.rename(tmp2, archive_path)
+except Exception: pass
+" "$_spec_tasks" "${TASK_ID}" 2>/dev/null || true
       fi
 
       # Advance to the next unchecked task, or clear if all done

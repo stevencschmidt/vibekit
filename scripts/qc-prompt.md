@@ -52,7 +52,7 @@ Do not write any files. Do not commit. Exit cleanly.
 
 1. **Read `state/sync.json`** to find the `SPEC_TASKS_FILE` path — or read `vibekit.config.sh` to get it. This is the `tasks.md` for the current spec.
 
-2. **Read `tasks.md`** and find the highest T-number currently in the file (e.g. if the last task is T007, start new tasks at T008).
+2. **Read `tasks.md`** and find the highest T-number currently in the file (e.g. if the last task is T007, start new tasks at T008). Completed task descriptions live in `tasks-archive.md` if you need historical context. The active checkbox list and unfinished task bodies remain in `tasks.md`.
 
 3. **Append new tasks** to `tasks.md`:
 

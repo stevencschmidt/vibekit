@@ -74,6 +74,8 @@ Description precise enough to start without asking.
 - `Verify:` — run this command after implementation. If it fails, fix the code until it passes before committing.
 - `Relevant:` — load these domain files before starting.
 
+Completed task bodies are moved to `tasks-archive.md` after each task. You will not normally need to read it.
+
 ---
 
 ## Skills Context
