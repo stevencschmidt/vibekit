@@ -1,12 +1,12 @@
 {
   "ralph": {
-    "task_id": "T007",
-    "task_title": "Split brief.md + drift check in completion QC",
+    "task_id": "T008",
+    "task_title": "session_log_append coverage + QC stall diagnostic + commit hygiene",
     "relevant_files": [
-      "docs/claude/architecture.md"
+      "docs/claude/conventions.md"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T007]",
-    "last_updated": "2026-05-04T20:59:58Z",
+    "last_sentinel": "[TASK_COMPLETE: T008]",
+    "last_updated": "2026-05-04T21:06:08Z",
     "session": 1
   },
   "execution": {
