@@ -1,13 +1,13 @@
 {
   "ralph": {
-    "task_id": "T005",
-    "task_title": "Make sync-agent.sh non-blocking (auto-compact fix)",
+    "task_id": "T006",
+    "task_title": "Split tasks.md \u2014 completed bodies move to tasks-archive.md",
     "relevant_files": [
       "docs/claude/architecture.md",
       "docs/claude/conventions.md"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T005]",
-    "last_updated": "2026-05-04T20:53:36Z",
+    "last_sentinel": "[TASK_COMPLETE: T006]",
+    "last_updated": "2026-05-04T20:58:15Z",
     "session": 1
   },
   "execution": {
