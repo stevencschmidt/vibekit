@@ -4,7 +4,7 @@
 - [x] T002 · Structured delta checks in sync agent
 - [x] T003 · Implement manifest.json end-to-end
 - [x] T004 · Checkpoint QC triggers in ralph.sh
-- [ ] T005 · Make sync-agent.sh non-blocking (auto-compact fix)
+- [x] T005 · Make sync-agent.sh non-blocking (auto-compact fix)
 - [ ] T006 · Split tasks.md — completed bodies move to tasks-archive.md
 - [ ] T007 · Split brief.md + drift check in completion QC
 - [ ] T008 · session_log_append coverage + QC stall diagnostic + commit hygiene

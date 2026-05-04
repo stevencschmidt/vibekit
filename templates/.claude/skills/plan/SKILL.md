@@ -358,8 +358,8 @@ Write `.claude/settings.json` with exactly this content:
 {
   "autoCompactThreshold": 0.5,
   "hooks": {
-    "PreCompact": [{"hooks": [{"type": "command", "command": "bash scripts/sync-agent.sh"}]}],
-    "SessionEnd":  [{"hooks": [{"type": "command", "command": "bash scripts/sync-agent.sh"}]}]
+    "PreCompact": [{"hooks": [{"type": "command", "command": "bash scripts/sync-agent.sh precompact"}]}],
+    "SessionEnd":  [{"hooks": [{"type": "command", "command": "bash scripts/sync-agent.sh sessionend"}]}]
   }
 }
 ```
