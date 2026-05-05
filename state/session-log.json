@@ -40,5 +40,25 @@
     "tasks_completed": [
       "T011"
     ]
+  },
+  {
+    "layer": "ralph",
+    "session": 1,
+    "started": "2026-05-05T19:05:03Z",
+    "ended": "2026-05-05T19:07:26Z",
+    "exit_reason": "TASK_COMPLETE",
+    "estimated_tokens": 0,
+    "tasks_completed": [
+      "T012"
+    ]
+  },
+  {
+    "layer": "ralph",
+    "session": 1,
+    "started": "2026-05-05T19:05:03Z",
+    "ended": "2026-05-05T19:10:04Z",
+    "exit_reason": "QC_STALL",
+    "estimated_tokens": 0,
+    "tasks_completed": []
   }
 ]
