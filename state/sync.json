@@ -1,13 +1,12 @@
 {
   "ralph": {
-    "task_id": null,
-    "task_title": "Document new conventions in domain files",
+    "task_id": "T010",
+    "task_title": "Fix sync_write/safety_commit ordering in ralph.sh",
     "relevant_files": [
-      "docs/claude/architecture.md",
       "docs/claude/conventions.md"
     ],
     "last_sentinel": "[TASK_COMPLETE: T009]",
-    "last_updated": "2026-05-04T21:07:40Z",
+    "last_updated": "2026-05-05T18:33:44Z",
     "session": 1
   },
   "execution": {

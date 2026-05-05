@@ -2,12 +2,15 @@
 # archive-completed-tasks.sh — One-shot migration helper.
 # Moves completed task bodies from tasks.md to tasks-archive.md.
 # Idempotent: running twice is a no-op (no [x] task bodies remain in tasks.md to extract).
-# Usage: bash scripts/archive-completed-tasks.sh
+# Usage: bash scripts/archive-completed-tasks.sh [PROJECT_ROOT]
+#   PROJECT_ROOT defaults to the parent of this script's directory (vibekit root).
+#   Pass a different path to run against another vibekit-scaffolded project, e.g.:
+#     bash scripts/archive-completed-tasks.sh /path/to/sandbox/ragtest
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_ROOT="${1:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 
 # Resolve Python
 if command -v python3 >/dev/null 2>&1 && python3 -c "import sys; assert sys.version_info[0]==3" 2>/dev/null; then
