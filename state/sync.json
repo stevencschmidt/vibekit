@@ -1,6 +1,6 @@
 {
   "ralph": {
-    "task_id": "T009",
+    "task_id": null,
     "task_title": "Document new conventions in domain files",
     "relevant_files": [
       "docs/claude/architecture.md",
