@@ -429,9 +429,16 @@ echo "============================================"
 echo ""
 
 if [[ -z "$PREFLIGHT_TASK_ID" || "$PREFLIGHT_TASK_ID" == "null" ]]; then
-  echo "No task assigned in sync.json — nothing to do."
-  echo "Run /plan to create a spec, or set ralph.task_id in state/sync.json manually."
-  exit 0
+  _PREFLIGHT_SENTINEL=$(sync_read "ralph.last_sentinel" 2>/dev/null || echo "null")
+  if [[ "$_PREFLIGHT_SENTINEL" == \[TASK_COMPLETE:* ]]; then
+    echo "No task assigned — all tasks complete. Entering QC." | tee -a "$LOG_FILE"
+    # Fall through to the main loop, which will detect null task_id and run QC.
+  else
+    echo "No task assigned in sync.json — nothing to do." | tee -a "$LOG_FILE"
+    echo "Run /plan to create a spec, or set ralph.task_id in state/sync.json manually."
+    echo "=== Stopped: no task assigned at $(date) ===" >> "$LOG_FILE"
+    exit 0
+  fi
 fi
 
 # === Resume: override task_id if --task was given ===
