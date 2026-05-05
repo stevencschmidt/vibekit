@@ -115,6 +115,17 @@ Unknown or missing mode defaults to fire-and-forget for safety. This arg must be
 
 `sync_write` and `session_log_append` always write atomically (temp file + rename) to avoid corrupt state on crash.
 
+## archive-completed-tasks.sh Usage
+
+Accepts an optional `PROJECT_ROOT` argument to target any vibekit-scaffolded project:
+
+```bash
+bash scripts/archive-completed-tasks.sh                          # vibekit itself
+bash scripts/archive-completed-tasks.sh /path/to/sandbox/ragtest  # another project
+```
+
+Without the argument, `PROJECT_ROOT` defaults to the script's parent directory.
+
 ## Error Handling
 
 - `sync-agent.sh` always exits 0 — never blocks compaction or session end

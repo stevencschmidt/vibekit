@@ -676,6 +676,14 @@ determines the initial file set.
 
 ---
 
+## Spec Status
+
+**spec-001 (framework-enhancements):** T001–T010 complete. Two tasks pending:
+- **T011** — Commit state files (`sync.json`, `session-log.json`) at run end so the next run's safety_commit doesn't sweep up orphaned state with a misleading "Claude did not commit" label.
+- **T012** — Document the inline monitoring pattern in `conventions.md`: use `Bash run_in_background` with a poll loop for terminal events, not persistent Monitor `tail -f`.
+
+---
+
 ## Open Questions
 
 - **Multi-person projects:** Agent git commits (`[claude-docs]`) create a clear record

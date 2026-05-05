@@ -76,6 +76,23 @@ Entry point for setting up a new project. Copies scripts, templates, creates dir
 
 ---
 
+### State File Commit Gap (known, T011)
+
+`ralph.sh` does not commit `state/sync.json` or `state/session-log.json` after QC completes or at run end. These files are left dirty and swept up by the *next* run's `safety_commit`, which incorrectly labels them "Claude did not commit." T011 will add explicit state-file commits at QC_COMPLETE, stall-exit, and max-iter paths.
+
+### Inline Monitoring Pattern
+
+When running Ralph from an interactive Claude Code session, use `Bash run_in_background` with a poll loop for terminal events — not a persistent Monitor `tail -f` pipe (which buffers notifications). Example:
+
+```bash
+# One notification when Ralph reaches any terminal state
+until grep -qE "QC_COMPLETE|Stopped:|Completed:" state/ralph.log; do sleep 5; done
+```
+
+Use Monitor (`tail -f | grep`) only for per-event progress notifications mid-run.
+
+---
+
 ## Key Boundaries
 
 - Ralph does NOT run the sync agent. Ralph is self-contained.

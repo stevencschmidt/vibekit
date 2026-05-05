@@ -49,3 +49,19 @@ Append-only audit log. Each entry has an anchor for precise retrieval.
 - Files updated: scripts/ralph.sh, scripts/sync-agent.sh, scripts/qc-prompt.md, scripts/ralph-prompt.md, scripts/archive-completed-tasks.sh (new), templates/.claude/skills/plan/SKILL.md, docs/claude/{architecture,conventions}.md
 - Why: 32KB tasks.md and 15KB brief.md were bloating chat context every /plan and QC pass; sync-agent.sh blocked Claude Code's auto-compact (chat reached 62% with no compaction).
 - Considered but rejected: in-place truncation of completed task bodies (loses detail); auto-trim brief on every fix task (over-aggressive); synchronous hook with timeout only (still blocks compaction up to the timeout).
+
+---
+
+<!-- DECISION:006 | domains: architecture, conventions -->
+## DECISION:006 — Dogfooding fixes: rate-limit detection, QC restart, monitoring approach
+
+- Files updated: scripts/ralph.sh (x3), scripts/qc-prompt.md
+- Why: Three runtime bugs discovered during vibekit's own spec-001 run; fixed inline (single-file, no-iteration edits) rather than queued through Ralph since each was a 1–3 line change blocking the run.
+
+  **False-positive rate limit detection** (`is_rate_limited_output`): Previously scanned the full Claude output for "rate limit", causing a multi-hour false wait when the QC agent read `ralph.log` (which contains actual "RATE LIMITED" log lines). Fix: only check the last 20 lines — real API errors appear at the tail of output.
+
+  **Preflight null task_id exit**: When restarted fresh with `task_id=null` after a completed spec, ralph.sh exited immediately ("No task assigned") without running QC. Fix: if `last_sentinel` contains `[TASK_COMPLETE: ...]`, fall through to the main loop so QC runs. Both paths now write to `$LOG_FILE` so the monitor catches them.
+
+  **qc-prompt.md brief lookup**: Hardcoded `brief.md` caused QC to silently skip on projects that use a different filename (vibekit uses `knowledge-graph-brief.md`). Fix: try `brief.md` → `BRIEF_FILE` from `vibekit.config.sh` → `knowledge-graph-brief.md`.
+
+- Considered but rejected: queuing each as a Ralph task (adds overhead for single-line fixes; the session policy exception for single-file-no-iteration edits exists exactly for this case).
