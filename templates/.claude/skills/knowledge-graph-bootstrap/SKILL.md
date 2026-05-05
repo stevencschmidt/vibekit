@@ -1,34 +1,3 @@
-# Tasks: 001-framework-enhancements
-
-- [x] T001 · Auto-populate verify_build() in /plan skill
-- [x] T002 · Structured delta checks in sync agent
-- [x] T003 · Implement manifest.json end-to-end
-- [x] T004 · Checkpoint QC triggers in ralph.sh
-- [x] T005 · Make sync-agent.sh non-blocking (auto-compact fix)
-- [x] T006 · Split tasks.md — completed bodies move to tasks-archive.md
-- [x] T007 · Split brief.md + drift check in completion QC
-- [x] T008 · session_log_append coverage + QC stall diagnostic + commit hygiene
-- [x] T009 · Document new conventions in domain files
-- [x] T010 · Fix sync_write/safety_commit ordering in ralph.sh
-- [x] T011 · Fix state file commit gap in ralph.sh
-- [x] T012 · Document inline monitoring pattern in conventions.md
-- [x] T013 · Fix stale routing-table text in ralph-prompt.md and knowledge-graph-brief.md
-- [x] T014 · Create knowledge-graph-bootstrap skill
-
----
-
-## T014 · Create knowledge-graph-bootstrap skill
-Depends on: T013
-Verify: `test -f templates/.claude/skills/knowledge-graph-bootstrap/SKILL.md && grep -q "knowledge-graph-bootstrap" templates/.claude/skills/knowledge-graph-bootstrap/SKILL.md`
-Relevant: docs/claude/conventions.md, docs/claude/architecture.md
-
-**Problem:** The brief (Pillar 1c, lines 331–360 of `knowledge-graph-brief.md`) specifies a `knowledge-graph-bootstrap` skill as a first-class vibekit component — the highest-stakes invocation in the system, where errors compound through every subsequent spec. No such skill file exists anywhere in the repo.
-
-**What to do:**
-
-Create `templates/.claude/skills/knowledge-graph-bootstrap/SKILL.md` with the following structure and content:
-
-```markdown
 ---
 name: knowledge-graph-bootstrap
 description: Initialize a new project's knowledge graph from a brief. Run once at project start. Invoke with: "initialize project from brief <path-to-brief.md>"
@@ -134,9 +103,3 @@ On confirmation:
 ## Done
 
 Tell the user the knowledge graph is initialized and they can now run `/plan <brief.md>` to start speccing features.
-```
-
-Commit with `[ralph] T014 complete — create knowledge-graph-bootstrap skill`.
-
----
-

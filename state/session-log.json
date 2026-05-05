@@ -60,5 +60,16 @@
     "exit_reason": "QC_STALL",
     "estimated_tokens": 0,
     "tasks_completed": []
+  },
+  {
+    "layer": "ralph",
+    "session": 1,
+    "started": "2026-05-05T19:16:20Z",
+    "ended": "2026-05-05T19:17:03Z",
+    "exit_reason": "TASK_COMPLETE",
+    "estimated_tokens": 0,
+    "tasks_completed": [
+      "T013"
+    ]
   }
 ]

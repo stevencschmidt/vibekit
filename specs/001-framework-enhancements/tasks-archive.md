@@ -418,3 +418,28 @@ Commit with `[ralph] T012 complete — document inline monitoring pattern`.
 
 ---
 
+## T013 · Fix stale routing-table text in ralph-prompt.md and knowledge-graph-brief.md
+Depends on: T012
+Verify: `! grep -q "routing table row" scripts/ralph-prompt.md && ! grep -q "updating the routing table when a new domain file" knowledge-graph-brief.md`
+Relevant: docs/claude/conventions.md, scripts/ralph-prompt.md
+
+**Problem:** Two files contradict the decision (captured in `knowledge-graph-brief.md` lines 77-78 and section "Pillar 1a") that the routing table was eliminated and replaced by `manifest.json`. The stale text implies Ralph should manually update CLAUDE.md when creating a domain file — which is wrong.
+
+1. **`scripts/ralph-prompt.md` line 24** currently reads:
+   > The only permitted mutations are adding a routing table row when a new domain file is created or incrementing the decision counter.
+
+   Replace with:
+   > The only permitted mutation is incrementing the decision counter. New domain files are created and registered in `docs/claude/manifest.json` by the sync agent — not by Ralph.
+
+2. **`knowledge-graph-brief.md` lines 85–89** currently reads:
+   > **CLAUDE.md is never a write target.** Neither the sync agent nor Ralph may write content into CLAUDE.md. The only permitted mutations are: updating the routing table when a new domain file is created, and incrementing the decision counter. Any content that doesn't fit in an existing domain file belongs in a new domain file — not in CLAUDE.md. This invariant must be explicitly enforced in both `knowledge-graph-sync` and `ralph-prompt.md`.
+
+   Replace the sentence "The only permitted mutations are: updating the routing table when a new domain file is created, and incrementing the decision counter." with:
+   > The only permitted mutation is incrementing the decision counter.
+
+   The surrounding sentences are correct and should stay unchanged.
+
+Commit with `[ralph] T013 complete — fix stale routing-table text`.
+
+---
+

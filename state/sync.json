@@ -1,11 +1,12 @@
 {
   "ralph": {
-    "task_id": "T013",
-    "task_title": "Fix stale routing-table text in ralph-prompt.md and knowledge-graph-brief.md",
+    "task_id": "T014",
+    "task_title": "Create knowledge-graph-bootstrap skill",
     "relevant_files": [
-      "docs/claude/conventions.md"
+      "docs/claude/conventions.md",
+      "docs/claude/architecture.md"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T012]",
+    "last_sentinel": "[TASK_COMPLETE: T013]",
     "last_updated": "2026-05-05T19:17:03Z",
     "session": 1
   },
