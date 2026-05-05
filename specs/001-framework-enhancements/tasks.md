@@ -10,29 +10,69 @@
 - [x] T008 · session_log_append coverage + QC stall diagnostic + commit hygiene
 - [x] T009 · Document new conventions in domain files
 - [x] T010 · Fix sync_write/safety_commit ordering in ralph.sh
+- [ ] T011 · Fix state file commit gap in ralph.sh
+- [ ] T012 · Document inline monitoring pattern in conventions.md
 
 ---
 
-## T010 · Fix sync_write/safety_commit ordering in ralph.sh
-Depends on: T009
-Verify: `bash -n scripts/ralph.sh`
-Relevant: docs/claude/conventions.md
+## T011 · Fix state file commit gap in ralph.sh
+Depends on: T010
+Verify: `bash -n scripts/ralph.sh && grep -q "state files" scripts/ralph.sh`
+Relevant: docs/claude/conventions.md, scripts/ralph.sh
 
-**Problem:** Every task iteration produces a spurious "Claude did not commit" safety commit containing only `state/sync.json`. The root cause: `sync_write "ralph.last_sentinel"` (line ~673) runs *before* `safety_commit` (line ~723), so sync.json is always dirty when the safety check fires. Claude is committing its own work correctly — the safety commit is a false positive and its label is misleading.
+**Problem:** `ralph.sh` never commits `state/sync.json` or `state/session-log.json` after QC completes or at run end. These state files are swept up by the *next* run's `safety_commit` with the misleading "POST-COMPLETE FALLBACK COMMIT" label, making it look like Claude failed to commit when it was actually just lingering state from the previous run.
 
 **What to do:**
 
-In `scripts/ralph.sh`, move the three `sync_write "ralph.last_sentinel"` calls (TASK_COMPLETE, TASK_BLOCKED, SESSION_HANDOFF paths — currently around lines 673, 677, 695) to *after* the `safety_commit "$TASK_ID"` call at line ~723.
+Add a small dedicated git commit for state files at three exit paths in `scripts/ralph.sh`:
 
-Specifically:
-1. Find the sentinel-detection block that writes `ralph.last_sentinel` for TASK_COMPLETE (~line 673), TASK_BLOCKED (~line 677), and SESSION_HANDOFF (~line 695).
-2. Remove those three `sync_write "ralph.last_sentinel"` calls from their current location.
-3. After `safety_commit "$TASK_ID"` (~line 723), add back only the TASK_COMPLETE write: `sync_write "ralph.last_sentinel" "[TASK_COMPLETE: ${TASK_ID}]"`.
-4. For TASK_BLOCKED and SESSION_HANDOFF, the sync_write can remain where it is (those paths exit the iteration immediately and don't call safety_commit).
+1. **QC_COMPLETE path** — after the existing `break` that exits the QC loop, add:
+   ```bash
+   git add state/sync.json state/session-log.json 2>/dev/null || true
+   git diff --cached --quiet || git commit -m "[claude-docs] state files post-QC_COMPLETE"
+   ```
 
-After this change, `safety_commit` will run on a clean tree when Claude has committed correctly, and the fallback will only fire when Claude genuinely left changes uncommitted.
+2. **Stall-exit path** — after the stall counter hits 3 and the loop exits, add the same two lines with message `"[claude-docs] state files post-stall-exit"`.
 
-Also rename the safety-commit log line from `"SAFETY COMMIT for $TASK_ID — Claude did not commit"` to `"POST-COMPLETE FALLBACK COMMIT for $TASK_ID"` so future occurrences are clearly exceptional.
+3. **Max-iter path** — after the max-iterations check exits the loop, add the same two lines with message `"[claude-docs] state files post-max-iter"`.
 
-Commit with `[ralph] T010 complete — fix sync_write/safety_commit ordering`.
+Use `git diff --cached --quiet || git commit` so the commit is a no-op when state files are already clean (idempotent).
+
+Commit with `[ralph] T011 complete — fix state file commit gap`.
+
+---
+
+## T012 · Document inline monitoring pattern in conventions.md
+Depends on: T011
+Verify: `grep -q "run_in_background" docs/claude/conventions.md && grep -q "poll loop" docs/claude/conventions.md`
+Relevant: docs/claude/conventions.md
+
+**Problem:** When running Ralph from an interactive Claude Code session, the natural instinct is to use `Monitor` with `tail -f state/ralph.log`. But persistent `Monitor` tail pipes buffer notifications silently — terminal events are swallowed and Claude never sees them. The correct pattern (`Bash run_in_background` + a poll loop) is not documented anywhere.
+
+**What to do:**
+
+Add a new section **"Running Ralph from an Interactive Session"** to `docs/claude/conventions.md`:
+
+```markdown
+## Running Ralph from an Interactive Session
+
+When launching Ralph from within Claude Code, use `Bash run_in_background` for the ralph.sh invocation, then monitor with a poll loop — NOT a persistent `Monitor tail -f` pipe.
+
+**Correct pattern:**
+```bash
+# Launch (run_in_background: true)
+nohup bash scripts/ralph.sh > state/ralph.log 2>&1
+
+# Poll loop (run_in_background: true)
+until grep -qE "QC_COMPLETE|=== Stopped" state/ralph.log; do sleep 5; done
+```
+
+`Monitor` with `tail -f` pipes buffer terminal events silently and Claude will not receive them. The poll loop exits as soon as the sentinel line appears, triggering a notification.
+```
+
+Place this section after the existing **"Atomic Operations"** section and before **"Error Handling"**.
+
+Commit with `[ralph] T012 complete — document inline monitoring pattern`.
+
+---
 

@@ -1,7 +1,7 @@
 {
   "ralph": {
-    "task_id": "T010",
-    "task_title": "Fix sync_write/safety_commit ordering in ralph.sh",
+    "task_id": "T011",
+    "task_title": "Fix state file commit gap in ralph.sh",
     "relevant_files": [
       "docs/claude/conventions.md"
     ],
