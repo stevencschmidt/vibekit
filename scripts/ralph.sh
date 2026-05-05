@@ -248,10 +248,14 @@ print(reset_dt.strftime('%H:%M:%S %Z'))
 # === Rate Limit Detection ===
 is_rate_limited_output() {
   local output="$1"
-  if echo "$output" | grep -qi "rate limit";        then return 0; fi
-  if echo "$output" | grep -qi "usage limit";       then return 0; fi
-  if echo "$output" | grep -qi "too many requests"; then return 0; fi
-  if echo "$output" | grep -qi "exceeded.*quota";   then return 0; fi
+  # Only check the last 20 lines — API errors appear at the tail of output,
+  # not embedded in content the agent generated (which may quote these phrases).
+  local tail_output
+  tail_output=$(echo "$output" | tail -n 20)
+  if echo "$tail_output" | grep -qi "rate limit";        then return 0; fi
+  if echo "$tail_output" | grep -qi "usage limit";       then return 0; fi
+  if echo "$tail_output" | grep -qi "too many requests"; then return 0; fi
+  if echo "$tail_output" | grep -qi "exceeded.*quota";   then return 0; fi
   return 1
 }
 
