@@ -7,5 +7,27 @@
     "exit_reason": "QC_COMPLETE",
     "estimated_tokens": 0,
     "tasks_completed": []
+  },
+  {
+    "layer": "ralph",
+    "session": 1,
+    "started": "2026-05-05T18:35:59Z",
+    "ended": "2026-05-05T18:38:26Z",
+    "exit_reason": "TASK_COMPLETE",
+    "estimated_tokens": 0,
+    "tasks_completed": [
+      "T010"
+    ]
+  },
+  {
+    "layer": "ralph",
+    "session": 1,
+    "started": "2026-05-05T18:35:59Z",
+    "ended": "2026-05-05T18:41:06Z",
+    "exit_reason": "QC_COMPLETE",
+    "estimated_tokens": 0,
+    "tasks_completed": [
+      "T010"
+    ]
   }
 ]
