@@ -1,12 +1,12 @@
 {
   "ralph": {
-    "task_id": "T014",
+    "task_id": null,
     "task_title": "Create knowledge-graph-bootstrap skill",
     "relevant_files": [
       "docs/claude/conventions.md",
       "docs/claude/architecture.md"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T013]",
+    "last_sentinel": "[TASK_COMPLETE: T014]",
     "last_updated": "2026-05-05T19:17:57Z",
     "session": 1
   },
