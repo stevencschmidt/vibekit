@@ -10,7 +10,7 @@
 - [x] T008 · session_log_append coverage + QC stall diagnostic + commit hygiene
 - [x] T009 · Document new conventions in domain files
 - [x] T010 · Fix sync_write/safety_commit ordering in ralph.sh
-- [ ] T011 · Fix state file commit gap in ralph.sh
+- [x] T011 · Fix state file commit gap in ralph.sh
 - [ ] T012 · Document inline monitoring pattern in conventions.md
 
 ---
