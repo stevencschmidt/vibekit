@@ -1,11 +1,11 @@
 {
   "ralph": {
-    "task_id": "T012",
-    "task_title": "Document inline monitoring pattern in conventions.md",
+    "task_id": "T013",
+    "task_title": "Fix stale routing-table text in ralph-prompt.md and knowledge-graph-brief.md",
     "relevant_files": [
       "docs/claude/conventions.md"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T011]",
+    "last_sentinel": "[TASK_COMPLETE: T012]",
     "last_updated": "2026-05-05T19:07:26Z",
     "session": 1
   },
