@@ -12,7 +12,7 @@
 - [x] T010 · Fix sync_write/safety_commit ordering in ralph.sh
 - [x] T011 · Fix state file commit gap in ralph.sh
 - [x] T012 · Document inline monitoring pattern in conventions.md
-- [ ] T013 · Fix stale routing-table text in ralph-prompt.md and knowledge-graph-brief.md
+- [x] T013 · Fix stale routing-table text in ralph-prompt.md and knowledge-graph-brief.md
 - [ ] T014 · Create knowledge-graph-bootstrap skill
 
 ---

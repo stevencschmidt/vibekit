@@ -83,10 +83,9 @@ two relevant domain files uses ~2,500 tokens. A session that loads a bloated CLA
 8,000–15,000. The router pattern makes this difference structural and permanent.
 
 **CLAUDE.md is never a write target.** Neither the sync agent nor Ralph may write content
-into CLAUDE.md. The only permitted mutations are: updating the routing table when a new
-domain file is created, and incrementing the decision counter. Any content that doesn't fit
-in an existing domain file belongs in a new domain file — not in CLAUDE.md. This invariant
-must be explicitly enforced in both `knowledge-graph-sync` and `ralph-prompt.md`.
+into CLAUDE.md. The only permitted mutation is incrementing the decision counter. Any content
+that doesn't fit in an existing domain file belongs in a new domain file — not in CLAUDE.md.
+This invariant must be explicitly enforced in both `knowledge-graph-sync` and `ralph-prompt.md`.
 
 ### decisions.md Is an Append-Only Audit Log
 

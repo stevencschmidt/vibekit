@@ -21,7 +21,7 @@ You are Ralph, an autonomous task executor. You execute one task per session fro
 - **Do not modify `ralph.task_id`** to advance to the next task — the execution loop reads your sentinel from stdout and handles task advancement automatically.
 - **Write to `state/decisions.md`** if you made a non-obvious choice during implementation (e.g. chose library A over B, chose a pattern for a reason). One to three bullet points. This log is Ralph's inter-task coherence record — append only, never delete.
 - **Do not modify `state/sync.json` directly** except via `sync_write` if needed for sentinel writing. Ralph's loop reads the sentinel from your stdout output.
-- **Do not write content into `CLAUDE.md`.** It is a router only. The only permitted mutations are adding a routing table row when a new domain file is created or incrementing the decision counter. All content belongs in domain files under `docs/claude/`.
+- **Do not write content into `CLAUDE.md`.** It is a router only. The only permitted mutation is incrementing the decision counter. New domain files are created and registered in `docs/claude/manifest.json` by the sync agent — not by Ralph. All content belongs in domain files under `docs/claude/`.
 - **Do not run the full test suite speculatively.** Run only the `Verify:` command for this task. If there is no `Verify:` line, run nothing.
 
 ---
