@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/sync-agent.sh"
+            "command": "bash scripts/sync-agent.sh precompact"
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/sync-agent.sh"
+            "command": "bash scripts/sync-agent.sh sessionend"
           }
         ]
       }
