@@ -357,7 +357,7 @@ safety_commit() {
   git -C "$PROJECT_ROOT" commit \
     -m "Ralph post-complete fallback commit: $task_id (Claude did not commit)" \
     2>/dev/null || true
-  echo "[$ITERATION] POST-COMPLETE FALLBACK COMMIT for $task_id — Claude did not commit: $(date)" >> "$LOG_FILE"
+  echo "[$ITERATION] POST-COMPLETE FALLBACK COMMIT for $task_id: $(date)" >> "$LOG_FILE"
 }
 
 # === Effective Prompt (with SKILLS_CONTEXT substituted) ===
@@ -681,7 +681,6 @@ except Exception: pass
   SENTINEL_TYPE=$(detect_sentinel "$OUTPUT" 2>/dev/null || echo "")
   NOW_ISO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   if [[ "$SENTINEL_TYPE" == "TASK_COMPLETE" ]]; then
-    sync_write "ralph.last_sentinel" "[TASK_COMPLETE: ${TASK_ID}]" 2>/dev/null || true
     sync_write "ralph.last_updated" "$NOW_ISO" 2>/dev/null || true
   elif [[ "$SENTINEL_TYPE" == "TASK_BLOCKED" ]]; then
     BLOCK_REASON=$(extract_block_reason "$OUTPUT" 2>/dev/null || echo "unknown reason")
@@ -732,6 +731,7 @@ except Exception: pass
       echo "[$ITERATION] Completed $TASK_ID (verified OK): $(date)" >> "$LOG_FILE"
       echo "  ✓ $TASK_ID complete (verified)"
       safety_commit "$TASK_ID"
+      sync_write "ralph.last_sentinel" "[TASK_COMPLETE: ${TASK_ID}]" 2>/dev/null || true
       TASKS_COMPLETED_SESSION+=("$TASK_ID")
       session_log_append "ralph" "$RALPH_SESSION" "$SESSION_START_ISO" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         "TASK_COMPLETE" "0" "[\"${TASK_ID}\"]" 2>/dev/null || true

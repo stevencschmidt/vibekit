@@ -9,7 +9,7 @@
 - [x] T007 · Split brief.md + drift check in completion QC
 - [x] T008 · session_log_append coverage + QC stall diagnostic + commit hygiene
 - [x] T009 · Document new conventions in domain files
-- [ ] T010 · Fix sync_write/safety_commit ordering in ralph.sh
+- [x] T010 · Fix sync_write/safety_commit ordering in ralph.sh
 
 ---
 
