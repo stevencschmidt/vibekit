@@ -11,34 +11,7 @@
 - [x] T009 · Document new conventions in domain files
 - [x] T010 · Fix sync_write/safety_commit ordering in ralph.sh
 - [x] T011 · Fix state file commit gap in ralph.sh
-- [ ] T012 · Document inline monitoring pattern in conventions.md
-
----
-
-## T011 · Fix state file commit gap in ralph.sh
-Depends on: T010
-Verify: `bash -n scripts/ralph.sh && grep -q "state files" scripts/ralph.sh`
-Relevant: docs/claude/conventions.md, scripts/ralph.sh
-
-**Problem:** `ralph.sh` never commits `state/sync.json` or `state/session-log.json` after QC completes or at run end. These state files are swept up by the *next* run's `safety_commit` with the misleading "POST-COMPLETE FALLBACK COMMIT" label, making it look like Claude failed to commit when it was actually just lingering state from the previous run.
-
-**What to do:**
-
-Add a small dedicated git commit for state files at three exit paths in `scripts/ralph.sh`:
-
-1. **QC_COMPLETE path** — after the existing `break` that exits the QC loop, add:
-   ```bash
-   git add state/sync.json state/session-log.json 2>/dev/null || true
-   git diff --cached --quiet || git commit -m "[claude-docs] state files post-QC_COMPLETE"
-   ```
-
-2. **Stall-exit path** — after the stall counter hits 3 and the loop exits, add the same two lines with message `"[claude-docs] state files post-stall-exit"`.
-
-3. **Max-iter path** — after the max-iterations check exits the loop, add the same two lines with message `"[claude-docs] state files post-max-iter"`.
-
-Use `git diff --cached --quiet || git commit` so the commit is a no-op when state files are already clean (idempotent).
-
-Commit with `[ralph] T011 complete — fix state file commit gap`.
+- [x] T012 · Document inline monitoring pattern in conventions.md
 
 ---
 

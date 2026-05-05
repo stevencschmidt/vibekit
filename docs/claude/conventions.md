@@ -126,6 +126,21 @@ bash scripts/archive-completed-tasks.sh /path/to/sandbox/ragtest  # another proj
 
 Without the argument, `PROJECT_ROOT` defaults to the script's parent directory.
 
+## Running Ralph from an Interactive Session
+
+When launching Ralph from within Claude Code, use `Bash run_in_background` for the ralph.sh invocation, then monitor with a poll loop — NOT a persistent `Monitor tail -f` pipe.
+
+**Correct pattern:**
+```bash
+# Launch (run_in_background: true)
+nohup bash scripts/ralph.sh > state/ralph.log 2>&1
+
+# Poll loop (run_in_background: true)
+until grep -qE "QC_COMPLETE|=== Stopped" state/ralph.log; do sleep 5; done
+```
+
+`Monitor` with `tail -f` pipes buffer terminal events silently and Claude will not receive them. The poll loop exits as soon as the sentinel line appears, triggering a notification.
+
 ## Error Handling
 
 - `sync-agent.sh` always exits 0 — never blocks compaction or session end

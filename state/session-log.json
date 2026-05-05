@@ -29,5 +29,16 @@
     "tasks_completed": [
       "T010"
     ]
+  },
+  {
+    "layer": "ralph",
+    "session": 1,
+    "started": "2026-05-05T19:05:03Z",
+    "ended": "2026-05-05T19:06:43Z",
+    "exit_reason": "TASK_COMPLETE",
+    "estimated_tokens": 0,
+    "tasks_completed": [
+      "T011"
+    ]
   }
 ]
