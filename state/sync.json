@@ -1,13 +1,13 @@
 {
   "ralph": {
-    "task_id": null,
-    "task_title": "Create knowledge-graph-bootstrap skill",
+    "task_id": "T015",
+    "task_title": "Tighten qc-prompt.md against hedging",
     "relevant_files": [
       "docs/claude/conventions.md",
-      "docs/claude/architecture.md"
+      "scripts/qc-prompt.md"
     ],
     "last_sentinel": "[TASK_COMPLETE: T014]",
-    "last_updated": "2026-05-05T19:17:57Z",
+    "last_updated": "2026-05-06T00:00:00Z",
     "session": 1
   },
   "execution": {
