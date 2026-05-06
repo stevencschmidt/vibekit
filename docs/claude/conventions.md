@@ -136,10 +136,19 @@ When launching Ralph from within Claude Code, use `Bash run_in_background` for t
 nohup bash scripts/ralph.sh > state/ralph.log 2>&1
 
 # Poll loop (run_in_background: true)
-until grep -qE "QC_COMPLETE|=== Stopped" state/ralph.log; do sleep 5; done
+until grep -qE '^\[QC_COMPLETE\]$|^=== Stopped' state/ralph.log; do sleep 5; done
 ```
 
+> **Why anchored?** The unanchored pattern `QC_COMPLETE|=== Stopped` will false-positive-match the literal sentinel text appearing inside checkpoint-QC review prose (the agent often quotes `[QC_COMPLETE]` while explaining the protocol). Anchored regex (`^...$`) only matches when the sentinel is on its own line — which is how ralph.sh actually emits it. This was Bug C3 from spec-002.
+
 `Monitor` with `tail -f` pipes buffer terminal events silently and Claude will not receive them. The poll loop exits as soon as the sentinel line appears, triggering a notification.
+
+**Per-task polling alternative** — use this when you want a notification after each task completes rather than waiting for end-of-spec:
+```bash
+# Per-task polling — exits after each TASK_COMPLETE so Claude can announce progress
+until grep -qE '^\[TASK_COMPLETE: T[0-9]+\]$|^=== Stopped' state/ralph.log; do sleep 5; done
+```
+The caller is responsible for tracking which TASK_COMPLETE was last seen and re-polling for the next one.
 
 ## Error Handling
 
