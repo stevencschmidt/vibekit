@@ -360,6 +360,14 @@ safety_commit() {
   echo "[$ITERATION] POST-COMPLETE FALLBACK COMMIT for $task_id: $(date)" >> "$LOG_FILE"
 }
 
+# === State File Commit Helper ===
+commit_state_files() {
+  local reason="$1"
+  git -C "$PROJECT_ROOT" add state/sync.json state/session-log.json 2>/dev/null || true
+  git -C "$PROJECT_ROOT" diff --cached --quiet || \
+    git -C "$PROJECT_ROOT" commit -m "[claude-docs] state files post-${reason}"
+}
+
 # === Effective Prompt (with SKILLS_CONTEXT substituted) ===
 # Creates a temp file with {{SKILLS_CONTEXT}} replaced by loaded skill manifests.
 # Temp file is deleted on exit via trap. Falls back to original prompt on error.
@@ -566,8 +574,7 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
       fi
       session_log_append "ralph" "$RALPH_SESSION" "$SESSION_START_ISO" "$_qc_end_iso" \
         "QC_COMPLETE" "0" "$_qc_tasks_json" 2>/dev/null || true
-      git -C "$PROJECT_ROOT" add state/sync.json state/session-log.json 2>/dev/null || true
-      git -C "$PROJECT_ROOT" diff --cached --quiet || git -C "$PROJECT_ROOT" commit -m "[claude-docs] state files post-QC_COMPLETE"
+      commit_state_files "QC_COMPLETE"
       exit 0
     fi
 
@@ -966,8 +973,7 @@ print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
       echo "=== Stopped: $TASK_ID stalled 3x at $(date) ===" >> "$LOG_FILE"
       session_log_append "ralph" "$RALPH_SESSION" "$SESSION_START_ISO" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         "STALL" "0" "[]" 2>/dev/null || true
-      git -C "$PROJECT_ROOT" add state/sync.json state/session-log.json 2>/dev/null || true
-      git -C "$PROJECT_ROOT" diff --cached --quiet || git -C "$PROJECT_ROOT" commit -m "[claude-docs] state files post-stall-exit"
+      commit_state_files "stall-exit"
       exit 1
     fi
 
@@ -984,6 +990,5 @@ echo "Check $LOG_FILE and $SYNC_FILE for status."
 echo "=== Stopped at max iterations: $(date) ===" >> "$LOG_FILE"
 session_log_append "ralph" "$RALPH_SESSION" "$SESSION_START_ISO" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   "MAX_ITER" "0" "[]" 2>/dev/null || true
-git -C "$PROJECT_ROOT" add state/sync.json state/session-log.json 2>/dev/null || true
-git -C "$PROJECT_ROOT" diff --cached --quiet || git -C "$PROJECT_ROOT" commit -m "[claude-docs] state files post-max-iter"
+commit_state_files "max-iter"
 exit 1

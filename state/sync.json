@@ -1,12 +1,12 @@
 {
   "ralph": {
-    "task_id": "T018",
-    "task_title": "Document bootstrap workflow in README and templates/CLAUDE.md",
+    "task_id": "T019",
+    "task_title": "Refactor state-file commits in ralph.sh into a helper",
     "relevant_files": [
-      "README.md",
-      "templates/CLAUDE.md"
+      "docs/claude/conventions.md",
+      "scripts/ralph.sh"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T017]",
+    "last_sentinel": "[TASK_COMPLETE: T018]",
     "last_updated": "2026-05-06T22:52:22Z",
     "session": 1
   },
