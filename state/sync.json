@@ -1,13 +1,12 @@
 {
   "ralph": {
-    "task_id": "T016",
-    "task_title": "Inline CLAUDE.md content into bootstrap skill",
+    "task_id": "T017",
+    "task_title": "Make bootstrap skill user-discoverable",
     "relevant_files": [
-      "templates/.claude/skills/knowledge-graph-bootstrap/SKILL.md",
-      "templates/CLAUDE.md"
+      "templates/.claude/skills/knowledge-graph-bootstrap/SKILL.md"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T015]",
-    "last_updated": "2026-05-06T22:49:38Z",
+    "last_sentinel": "[TASK_COMPLETE: T016]",
+    "last_updated": "2026-05-06T22:50:14Z",
     "session": 1
   },
   "execution": {
