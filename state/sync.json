@@ -1,12 +1,12 @@
 {
   "ralph": {
-    "task_id": "T015",
-    "task_title": "Tighten qc-prompt.md against hedging",
+    "task_id": "T016",
+    "task_title": "Inline CLAUDE.md content into bootstrap skill",
     "relevant_files": [
-      "docs/claude/conventions.md",
-      "scripts/qc-prompt.md"
+      "templates/.claude/skills/knowledge-graph-bootstrap/SKILL.md",
+      "templates/CLAUDE.md"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T014]",
+    "last_sentinel": "[TASK_COMPLETE: T015]",
     "last_updated": "2026-05-06T22:47:53Z",
     "session": 1
   },

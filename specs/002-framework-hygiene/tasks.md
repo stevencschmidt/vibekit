@@ -1,46 +1,11 @@
 # Tasks: 002-framework-hygiene
 
 - [x] T015 · Tighten qc-prompt.md against hedging
-- [ ] T016 · Inline CLAUDE.md content into bootstrap skill
+- [x] T016 · Inline CLAUDE.md content into bootstrap skill
 - [ ] T017 · Make bootstrap skill user-discoverable
 - [ ] T018 · Document bootstrap workflow in README and templates/CLAUDE.md
 - [ ] T019 · Refactor state-file commits in ralph.sh into a helper
 - [ ] T020 · Create scripts/upgrade.sh for framework sync to scaffolded projects
-
----
-
-## T015 · Tighten qc-prompt.md against hedging
-Depends on: —
-Verify: `grep -q "Decision Check" scripts/qc-prompt.md && grep -q "protocol violation" scripts/qc-prompt.md`
-Relevant: docs/claude/conventions.md, scripts/qc-prompt.md
-
-**Problem:** During spec-001's post-T012 QC pass, the QC agent found two real gaps (a missing bootstrap skill and stale routing-table text) but produced prose-only output — neither emitted `[QC_COMPLETE]` nor created tasks. Ralph treated this as a stall. The qc-prompt.md has both paths clearly documented (lines 54–104) but no explicit prohibition on hedging. The agent's natural response to ambiguity is to describe rather than decide.
-
-**What to do:**
-
-Edit `scripts/qc-prompt.md`. After the existing **Step 4 — Decision** block (the one that ends around line 104 with "Do not emit `[QC_COMPLETE]`. Ralph will detect the new `task_id` in `sync.json` and resume execution."), insert a new section:
-
-```markdown
----
-
-## Step 4.5 — Decision Check (mandatory)
-
-Before exiting, you must have either:
-
-- **(a)** emitted `[QC_COMPLETE]` on its own line, OR
-- **(b)** committed new tasks to `tasks.md` and updated `state/sync.json` with the first new task ID
-
-**Prose-only output is a protocol violation.** If you describe gaps but neither create tasks nor emit `[QC_COMPLETE]`, Ralph will treat this as a stall and exit — the gaps will be lost.
-
-If you cannot confidently decide whether something is a gap:
-
-- Treat it as a gap and create a task. The user will dismiss it if wrong — that is far cheaper than losing it.
-- Mark uncertainty in the task description (e.g. "Possibly out of scope — confirm with user").
-
-Do not exit without committing to one of (a) or (b).
-```
-
-Commit with `[ralph] T015 complete — tighten QC prompt against hedging`.
 
 ---
 
