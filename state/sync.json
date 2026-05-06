@@ -1,13 +1,13 @@
 {
   "ralph": {
-    "task_id": "T020",
-    "task_title": "Create scripts/upgrade.sh for framework sync to scaffolded projects",
+    "task_id": "T021",
+    "task_title": "Custom statusline script for in-terminal ralph progress",
     "relevant_files": [
       "docs/claude/conventions.md",
-      "init.sh"
+      "state/sync.json"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T019]",
-    "last_updated": "2026-05-06T22:54:41Z",
+    "last_sentinel": "[TASK_COMPLETE: T020]",
+    "last_updated": "2026-05-06T23:00:00Z",
     "session": 1
   },
   "execution": {
