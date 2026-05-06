@@ -105,6 +105,24 @@ Do not write any files. Do not commit. Exit cleanly.
 
 ---
 
+## Step 4.5 — Decision Check (mandatory)
+
+Before exiting, you must have either:
+
+- **(a)** emitted `[QC_COMPLETE]` on its own line, OR
+- **(b)** committed new tasks to `tasks.md` and updated `state/sync.json` with the first new task ID
+
+**Prose-only output is a protocol violation.** If you describe gaps but neither create tasks nor emit `[QC_COMPLETE]`, Ralph will treat this as a stall and exit — the gaps will be lost.
+
+If you cannot confidently decide whether something is a gap:
+
+- Treat it as a gap and create a task. The user will dismiss it if wrong — that is far cheaper than losing it.
+- Mark uncertainty in the task description (e.g. "Possibly out of scope — confirm with user").
+
+Do not exit without committing to one of (a) or (b).
+
+---
+
 ## What NOT to Do
 
 - Do not re-implement completed tasks

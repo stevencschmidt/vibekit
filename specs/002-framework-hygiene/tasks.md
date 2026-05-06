@@ -1,6 +1,6 @@
 # Tasks: 002-framework-hygiene
 
-- [ ] T015 · Tighten qc-prompt.md against hedging
+- [x] T015 · Tighten qc-prompt.md against hedging
 - [ ] T016 · Inline CLAUDE.md content into bootstrap skill
 - [ ] T017 · Make bootstrap skill user-discoverable
 - [ ] T018 · Document bootstrap workflow in README and templates/CLAUDE.md
