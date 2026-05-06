@@ -1,13 +1,12 @@
 {
   "ralph": {
-    "task_id": "T021",
-    "task_title": "Custom statusline script for in-terminal ralph progress",
+    "task_id": "T022",
+    "task_title": "Tighten Claude polling pattern in conventions doc",
     "relevant_files": [
-      "docs/claude/conventions.md",
-      "state/sync.json"
+      "docs/claude/conventions.md"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T020]",
-    "last_updated": "2026-05-06T23:33:37Z",
+    "last_sentinel": "[TASK_COMPLETE: T021]",
+    "last_updated": "2026-05-06T23:34:21Z",
     "session": 1
   },
   "execution": {
