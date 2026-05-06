@@ -1,7 +1,7 @@
 ---
 name: knowledge-graph-bootstrap
-description: Initialize a new project's knowledge graph from a brief. Run once at project start. Invoke with: "initialize project from brief <path-to-brief.md>"
-trigger: internal
+description: Initialize a new project's knowledge graph from a brief. Run once at project start with /knowledge-graph-bootstrap <path-to-brief.md>.
+trigger: /knowledge-graph-bootstrap
 ---
 
 # knowledge-graph-bootstrap

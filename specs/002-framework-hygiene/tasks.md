@@ -2,36 +2,10 @@
 
 - [x] T015 · Tighten qc-prompt.md against hedging
 - [x] T016 · Inline CLAUDE.md content into bootstrap skill
-- [ ] T017 · Make bootstrap skill user-discoverable
+- [x] T017 · Make bootstrap skill user-discoverable
 - [ ] T018 · Document bootstrap workflow in README and templates/CLAUDE.md
 - [ ] T019 · Refactor state-file commits in ralph.sh into a helper
 - [ ] T020 · Create scripts/upgrade.sh for framework sync to scaffolded projects
-
----
-
-## T016 · Inline CLAUDE.md content into bootstrap skill
-Depends on: T015
-Verify: `! grep -q "templates/CLAUDE.md" templates/.claude/skills/knowledge-graph-bootstrap/SKILL.md`
-Relevant: templates/.claude/skills/knowledge-graph-bootstrap/SKILL.md, templates/CLAUDE.md
-
-**Problem:** `templates/.claude/skills/knowledge-graph-bootstrap/SKILL.md` references `templates/CLAUDE.md` in two places (lines 51 and 65 — Phase 3 file-set preview and Phase 4 step 1). When the skill is invoked in a scaffolded project, that path doesn't exist — `templates/` only lives in the vibekit repo. Invoking the skill currently fails at Phase 4 step 1.
-
-**What to do:**
-
-In `templates/.claude/skills/knowledge-graph-bootstrap/SKILL.md`:
-
-1. **Phase 3 preview block** (currently `"CLAUDE.md will be initialized from templates/CLAUDE.md."`): replace with `"CLAUDE.md will be initialized from the inline template in Phase 4 step 1."`.
-
-2. **Phase 4 step 1** (currently `"copy from templates/CLAUDE.md, replacing PROJECT_NAME..."`): replace with the full content of `templates/CLAUDE.md` (38 lines) embedded in a fenced code block, with `<-- placeholders -->` for `PROJECT_NAME` and the description line. The skill should instruct Claude to write this content directly to `CLAUDE.md` at the project root, substituting:
-   - `PROJECT_NAME` → the project name
-   - `> One-line description of what this project does.` → the actual one-liner from the brief
-   - `Total decisions: 000` → `Total decisions: 001` (since bootstrap creates one decision)
-
-Read `templates/CLAUDE.md` first to get the exact content to inline. Do not paraphrase — preserve every line including blank lines, headers, and the existing PROJECT_NAME placeholder syntax.
-
-After this change, the skill is fully self-contained — it has no external file dependencies on `templates/`.
-
-Commit with `[ralph] T016 complete — inline CLAUDE.md content into bootstrap skill`.
 
 ---
 
