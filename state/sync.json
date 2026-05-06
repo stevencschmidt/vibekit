@@ -1,12 +1,13 @@
 {
   "ralph": {
-    "task_id": "T017",
-    "task_title": "Make bootstrap skill user-discoverable",
+    "task_id": "T018",
+    "task_title": "Document bootstrap workflow in README and templates/CLAUDE.md",
     "relevant_files": [
-      "templates/.claude/skills/knowledge-graph-bootstrap/SKILL.md"
+      "README.md",
+      "templates/CLAUDE.md"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T016]",
-    "last_updated": "2026-05-06T22:50:14Z",
+    "last_sentinel": "[TASK_COMPLETE: T017]",
+    "last_updated": "2026-05-06T22:52:22Z",
     "session": 1
   },
   "execution": {
