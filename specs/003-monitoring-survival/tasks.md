@@ -1,6 +1,6 @@
 # Tasks: 003-monitoring-survival
 
-- [ ] T021 · Custom statusline script for in-terminal ralph progress
+- [x] T021 · Custom statusline script for in-terminal ralph progress
 - [ ] T022 · Tighten Claude polling pattern in conventions doc
 - [ ] T023 · Audit + harden ralph.sh rate-limit detection
 - [ ] T024 · Add notify_exit helper + status file + libnotify integration

@@ -173,6 +173,39 @@ cat state/sync.json
 
 ---
 
+## Wiring statusline into Claude Code
+
+`scripts/statusline.sh` reads `state/sync.json` and `state/ralph.log` and emits a one-line ralph progress indicator. Wire it into Claude Code's custom statusline via `~/.claude/settings.json`:
+
+**Replace ccstatusline:**
+```json
+{
+  "statusLine": {
+    "command": "bash /path/to/vibekit/scripts/statusline.sh"
+  }
+}
+```
+
+**Wrap ccstatusline** (keep your existing statusline and append ralph status):
+```bash
+#!/usr/bin/env bash
+# ~/.local/bin/my-statusline.sh
+VIBEKIT="$(bash /path/to/vibekit/scripts/statusline.sh)"
+CCSTATUS="$(ccstatusline)"
+if [[ -n "$VIBEKIT" && -n "$CCSTATUS" ]]; then
+  printf '%s · %s\n' "$CCSTATUS" "$VIBEKIT"
+elif [[ -n "$VIBEKIT" ]]; then
+  printf '%s\n' "$VIBEKIT"
+else
+  printf '%s\n' "$CCSTATUS"
+fi
+```
+Then set `statusLine.command` to `bash ~/.local/bin/my-statusline.sh`.
+
+The script exits silently (empty stdout) when run outside a vibekit project, so wrapping is always safe.
+
+---
+
 ## Project Structure After `init.sh`
 
 ```
