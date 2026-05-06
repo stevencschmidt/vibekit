@@ -3,29 +3,9 @@
 - [x] T015 · Tighten qc-prompt.md against hedging
 - [x] T016 · Inline CLAUDE.md content into bootstrap skill
 - [x] T017 · Make bootstrap skill user-discoverable
-- [ ] T018 · Document bootstrap workflow in README and templates/CLAUDE.md
+- [x] T018 · Document bootstrap workflow in README and templates/CLAUDE.md
 - [ ] T019 · Refactor state-file commits in ralph.sh into a helper
 - [ ] T020 · Create scripts/upgrade.sh for framework sync to scaffolded projects
-
----
-
-## T017 · Make bootstrap skill user-discoverable
-Depends on: T016
-Verify: `grep -q "^trigger: /knowledge-graph-bootstrap" templates/.claude/skills/knowledge-graph-bootstrap/SKILL.md`
-Relevant: templates/.claude/skills/knowledge-graph-bootstrap/SKILL.md
-
-**Problem:** The bootstrap skill's frontmatter has `trigger: internal`, which means it can't be invoked as a slash command. The brief (Pillar 1c, knowledge-graph-brief.md) states the skill is "Invoked by: 'initialize project from brief'" — implying user-facing invocation. The intent is for the user to run it explicitly at project start, after writing `brief.md`.
-
-**What to do:**
-
-In `templates/.claude/skills/knowledge-graph-bootstrap/SKILL.md`, edit the frontmatter:
-
-1. Change `trigger: internal` → `trigger: /knowledge-graph-bootstrap` (matches `/plan`'s convention of slash-command name = skill name).
-2. Update the `description:` line to mention the slash-command invocation explicitly: `Initialize a new project's knowledge graph from a brief. Run once at project start with /knowledge-graph-bootstrap <path-to-brief.md>.`
-
-Do not change anything below the frontmatter `---`.
-
-Commit with `[ralph] T017 complete — make bootstrap skill user-discoverable`.
 
 ---
 

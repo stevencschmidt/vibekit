@@ -49,6 +49,25 @@ That's it — you can start planning immediately. `vibekit.config.sh` has sensib
 
 ---
 
+## Bootstrap
+
+After `init.sh` scaffolds a project, you write a brief (`brief.md` at project root, ~1 page describing what the project should do) and invoke the bootstrap skill once:
+
+```
+/knowledge-graph-bootstrap brief.md
+```
+
+Bootstrap reads the brief, has a 3–5 exchange clarifying conversation, and generates the initial knowledge graph: `CLAUDE.md` router + the warranted domain files under `docs/claude/` + `manifest.json` + a bootstrap entry in `decisions.md`. Bootstrap commits with `[claude-docs] bootstrap — initial knowledge graph from brief`.
+
+Bootstrap is the highest-stakes invocation in the framework — assumptions made here propagate through every subsequent spec. Run with `/model opus` enabled.
+
+**Workflow summary:**
+```
+init.sh → write brief.md → /knowledge-graph-bootstrap → /plan → bash scripts/ralph.sh
+```
+
+---
+
 ## Planning and Building a Feature (`/plan`)
 
 Write `brief.md` in your project directory — a plain markdown file describing what you want to build, about a page. Cover what success looks like, any hard constraints, and what's out of scope. No special format required.

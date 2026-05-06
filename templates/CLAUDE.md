@@ -15,6 +15,7 @@ Before starting any task, read `docs/claude/manifest.json`. Based on the task at
 - **Test command:** `<test command>`
 - **Dev server:** `<dev server command>`
 - **Branch convention:** `feature/<slug>`, `fix/<slug>`
+- **Bootstrap:** `/knowledge-graph-bootstrap <brief>` (run once at project start)
 
 ---
 
