@@ -1,12 +1,12 @@
 {
   "ralph": {
-    "task_id": "T019",
-    "task_title": "Refactor state-file commits in ralph.sh into a helper",
+    "task_id": "T020",
+    "task_title": "Create scripts/upgrade.sh for framework sync to scaffolded projects",
     "relevant_files": [
       "docs/claude/conventions.md",
-      "scripts/ralph.sh"
+      "init.sh"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T018]",
+    "last_sentinel": "[TASK_COMPLETE: T019]",
     "last_updated": "2026-05-06T22:53:30Z",
     "session": 1
   },
