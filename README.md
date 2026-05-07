@@ -212,6 +212,18 @@ For desktop popup notifications, install libnotify-bin (Debian/Ubuntu: `sudo apt
 
 ---
 
+## Reboot Survival
+
+Long-running specs may need to survive host reboots. Vibekit ships a systemd --user unit installer:
+
+```
+bash scripts/install-service.sh
+```
+
+Then follow the printed instructions to enable linger and start the service. After that, ralph will auto-resume from `state/sync.json` on every boot. `Restart=no` means stalls and failures still require human review — this is reboot survival, not auto-recovery from real failures.
+
+---
+
 ## Project Structure After `init.sh`
 
 ```
