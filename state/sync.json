@@ -1,13 +1,13 @@
 {
   "ralph": {
-    "task_id": "T024",
-    "task_title": "Add notify_exit helper + status file + libnotify integration",
+    "task_id": "T025",
+    "task_title": "systemd --user unit installer for reboot survival",
     "relevant_files": [
-      "scripts/ralph.sh",
-      ".gitignore"
+      "docs/claude/conventions.md",
+      "README.md"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T023]",
-    "last_updated": "2026-05-07T03:39:55Z",
+    "last_sentinel": "[TASK_COMPLETE: T024]",
+    "last_updated": "2026-05-07T03:40:53Z",
     "session": 1
   },
   "execution": {
