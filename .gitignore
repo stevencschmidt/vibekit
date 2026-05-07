@@ -1,5 +1,6 @@
 sandbox/
 state/ralph.log
+state/ralph.status
 __pycache__/
 *.pyc
 .DS_Store

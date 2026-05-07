@@ -373,6 +373,18 @@ commit_state_files() {
     git -C "$PROJECT_ROOT" commit -m "[claude-docs] state files post-${reason}"
 }
 
+# === Exit Notification ===
+notify_exit() {
+  local event="$1" summary="$2"
+  local ts
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf '{"ts":"%s","event":"%s","summary":"%s"}\n' "$ts" "$event" "$summary" \
+    >> "$PROJECT_ROOT/state/ralph.status" 2>/dev/null || true
+  command -v notify-send >/dev/null 2>&1 && \
+    notify-send "vibekit/$event" "$summary" 2>/dev/null || true
+  printf '\a' > /dev/tty 2>/dev/null || true
+}
+
 # === Effective Prompt (with SKILLS_CONTEXT substituted) ===
 # Creates a temp file with {{SKILLS_CONTEXT}} replaced by loaded skill manifests.
 # Temp file is deleted on exit via trap. Falls back to original prompt on error.
@@ -404,6 +416,7 @@ _ralph_interrupted() {
     echo "  Rolling back uncommitted changes from current iteration..."
     git -C "$PROJECT_ROOT" reset --hard "$PRE_SHA" 2>/dev/null || true
   fi
+  notify_exit "INTERRUPTED" "ralph caught SIGINT/SIGTERM"
   echo "=== Stopped: interrupted at $(date) ===" >> "$LOG_FILE" 2>/dev/null || true
   exit 130
 }
@@ -453,6 +466,7 @@ if [[ -z "$PREFLIGHT_TASK_ID" || "$PREFLIGHT_TASK_ID" == "null" ]]; then
   else
     echo "No task assigned in sync.json — nothing to do." | tee -a "$LOG_FILE"
     echo "Run /plan to create a spec, or set ralph.task_id in state/sync.json manually."
+    notify_exit "IDLE" "no task_id in sync.json — nothing to do"
     echo "=== Stopped: no task assigned at $(date) ===" >> "$LOG_FILE"
     exit 0
   fi
@@ -516,6 +530,7 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
       echo ""
       echo "STOPPED: QC loop exceeded $MAX_QC_ROUNDS rounds without [QC_COMPLETE]."
       echo "Review brief.md and tasks.md — the QC agent may be identifying the same gaps repeatedly."
+      notify_exit "QC_ROUND_CAP" "QC exceeded $MAX_QC_ROUNDS rounds without [QC_COMPLETE]"
       echo "=== Stopped: QC round cap ($MAX_QC_ROUNDS) at $(date) ===" >> "$LOG_FILE"
       exit 1
     fi
@@ -531,6 +546,7 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
       RATE_LIMIT_WAITS=$((RATE_LIMIT_WAITS + 1))
       if [[ $RATE_LIMIT_WAITS -ge $MAX_RATE_LIMIT_WAITS ]]; then
         echo "STOPPED: Hit rate limit $MAX_RATE_LIMIT_WAITS consecutive times."
+        notify_exit "RATE_LIMIT_CAP" "ralph hit $MAX_RATE_LIMIT_WAITS consecutive rate-limit waits"
         echo "=== Stopped: rate limit wait cap ($MAX_RATE_LIMIT_WAITS) at $(date) ===" >> "$LOG_FILE"
         exit 1
       fi
@@ -557,6 +573,7 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
       RATE_LIMIT_WAITS=$((RATE_LIMIT_WAITS + 1))
       if [[ $RATE_LIMIT_WAITS -ge $MAX_RATE_LIMIT_WAITS ]]; then
         echo "STOPPED: Hit rate limit $MAX_RATE_LIMIT_WAITS consecutive times."
+        notify_exit "RATE_LIMIT_CAP" "ralph hit $MAX_RATE_LIMIT_WAITS consecutive rate-limit waits"
         echo "=== Stopped: rate limit wait cap ($MAX_RATE_LIMIT_WAITS) at $(date) ===" >> "$LOG_FILE"
         exit 1
       fi
@@ -569,6 +586,7 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
     if echo "$QC_OUTPUT" | grep -q "\[QC_COMPLETE\]"; then
       echo ""
       echo "QC complete — no gaps found against brief.md."
+      notify_exit "QC_COMPLETE" "spec complete after $ITERATION iterations"
       echo "=== QC_COMPLETE at $(date) (round $QC_ROUND) ===" >> "$LOG_FILE"
       _qc_end_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
       if [[ ${#TASKS_COMPLETED_SESSION[@]} -gt 0 ]]; then
@@ -589,6 +607,7 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
       echo ""
       echo "QC ran but found no new tasks and did not emit [QC_COMPLETE]."
       echo "Check $LOG_FILE and review scripts/qc-prompt.md."
+      notify_exit "QC_STALL" "QC produced no [QC_COMPLETE] and no new tasks"
       echo "=== Stopped: QC stalled at $(date) ===" >> "$LOG_FILE"
       echo "[QC-$QC_ROUND] QC stalled — last 80 lines of QC output:" >> "$LOG_FILE"
       echo "$QC_OUTPUT" | tail -n 80 >> "$LOG_FILE"
@@ -615,6 +634,7 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
       echo ""
       echo "STOPPED: Hit rate limit $MAX_RATE_LIMIT_WAITS consecutive times."
       echo "Check your Claude Pro plan status."
+      notify_exit "RATE_LIMIT_CAP" "ralph hit $MAX_RATE_LIMIT_WAITS consecutive rate-limit waits"
       echo "=== Stopped: rate limit wait cap ($MAX_RATE_LIMIT_WAITS) at $(date) ===" >> "$LOG_FILE"
       exit 1
     fi
@@ -675,6 +695,7 @@ except Exception: pass
       echo ""
       echo "STOPPED: Hit rate limit $MAX_RATE_LIMIT_WAITS consecutive times."
       echo "Check your Claude Pro plan status."
+      notify_exit "RATE_LIMIT_CAP" "ralph hit $MAX_RATE_LIMIT_WAITS consecutive rate-limit waits"
       echo "=== Stopped: rate limit wait cap ($MAX_RATE_LIMIT_WAITS) at $(date) ===" >> "$LOG_FILE"
       exit 1
     fi
@@ -706,6 +727,7 @@ except Exception: pass
     echo "STOPPED: Task blocked — human intervention required."
     echo "Reason: $BLOCK_REASON"
     echo "Check $LOG_FILE and $SYNC_FILE for details."
+    notify_exit "TASK_BLOCKED" "$TASK_ID blocked: $BLOCK_REASON"
     echo "=== Stopped: $TASK_ID blocked at $(date) ===" >> "$LOG_FILE"
     exit 1
   elif [[ "$SENTINEL_TYPE" == "SESSION_HANDOFF" ]]; then
@@ -864,6 +886,7 @@ print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
               RATE_LIMIT_WAITS=$((RATE_LIMIT_WAITS + 1))
               if [[ $RATE_LIMIT_WAITS -ge $MAX_RATE_LIMIT_WAITS ]]; then
                 echo "STOPPED: Hit rate limit $MAX_RATE_LIMIT_WAITS consecutive times."
+                notify_exit "RATE_LIMIT_CAP" "ralph hit $MAX_RATE_LIMIT_WAITS consecutive rate-limit waits"
                 echo "=== Stopped: rate limit wait cap ($MAX_RATE_LIMIT_WAITS) at $(date) ===" >> "$LOG_FILE"
                 exit 1
               fi
@@ -886,6 +909,7 @@ print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
               RATE_LIMIT_WAITS=$((RATE_LIMIT_WAITS + 1))
               if [[ $RATE_LIMIT_WAITS -ge $MAX_RATE_LIMIT_WAITS ]]; then
                 echo "STOPPED: Hit rate limit $MAX_RATE_LIMIT_WAITS consecutive times."
+                notify_exit "RATE_LIMIT_CAP" "ralph hit $MAX_RATE_LIMIT_WAITS consecutive rate-limit waits"
                 echo "=== Stopped: rate limit wait cap ($MAX_RATE_LIMIT_WAITS) at $(date) ===" >> "$LOG_FILE"
                 exit 1
               fi
@@ -943,6 +967,7 @@ print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
         echo "STOPPED: $TASK_ID failed verification 3 consecutive times."
         echo "The code compiles/runs but fails the quality check."
         echo "Review the verification output above and check $LOG_FILE."
+        notify_exit "VERIFY_FAILED" "$TASK_ID failed verify_build 3 times"
         echo "=== Stopped: $TASK_ID verify-failed 3x at $(date) ===" >> "$LOG_FILE"
         session_log_append "ralph" "$RALPH_SESSION" "$SESSION_START_ISO" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
           "BUILD_FAIL" "0" "[]" 2>/dev/null || true
@@ -975,6 +1000,7 @@ print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
       echo "  - Dependency on a USER task not yet completed"
       echo ""
       echo "Check $LOG_FILE and $SYNC_FILE for details."
+      notify_exit "TASK_STALL" "$TASK_ID produced no sentinel 3 times"
       echo "=== Stopped: $TASK_ID stalled 3x at $(date) ===" >> "$LOG_FILE"
       session_log_append "ralph" "$RALPH_SESSION" "$SESSION_START_ISO" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         "STALL" "0" "[]" 2>/dev/null || true
@@ -992,6 +1018,7 @@ echo ""
 echo "Reached max iterations ($MAX_ITERATIONS)."
 echo "Run ralph again to continue, or increase --max."
 echo "Check $LOG_FILE and $SYNC_FILE for status."
+notify_exit "MAX_ITER" "ralph hit MAX_ITERATIONS=$MAX_ITERATIONS without completion"
 echo "=== Stopped at max iterations: $(date) ===" >> "$LOG_FILE"
 session_log_append "ralph" "$RALPH_SESSION" "$SESSION_START_ISO" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   "MAX_ITER" "0" "[]" 2>/dev/null || true

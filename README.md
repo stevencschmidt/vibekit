@@ -206,6 +206,12 @@ The script exits silently (empty stdout) when run outside a vibekit project, so 
 
 ---
 
+## Notifications
+
+For desktop popup notifications, install libnotify-bin (Debian/Ubuntu: `sudo apt install libnotify-bin`). Without it, ralph still emits a terminal bell on exit and writes structured events to `state/ralph.status` for the statusline to display.
+
+---
+
 ## Project Structure After `init.sh`
 
 ```
