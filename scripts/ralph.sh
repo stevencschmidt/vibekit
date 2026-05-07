@@ -465,7 +465,7 @@ if [[ -z "$PREFLIGHT_TASK_ID" || "$PREFLIGHT_TASK_ID" == "null" ]]; then
     # Fall through to the main loop, which will detect null task_id and run QC.
   else
     echo "No task assigned in sync.json — nothing to do." | tee -a "$LOG_FILE"
-    echo "Run /plan to create a spec, or set ralph.task_id in state/sync.json manually."
+    echo "Run /vibeplan to create a spec, or set ralph.task_id in state/sync.json manually."
     notify_exit "IDLE" "no task_id in sync.json — nothing to do"
     echo "=== Stopped: no task assigned at $(date) ===" >> "$LOG_FILE"
     exit 0
