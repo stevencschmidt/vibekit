@@ -1,6 +1,6 @@
 # Decision Log
 
-Total decisions: 005
+Total decisions: 007
 
 Append-only audit log. Each entry has an anchor for precise retrieval.
 
@@ -65,3 +65,12 @@ Append-only audit log. Each entry has an anchor for precise retrieval.
   **qc-prompt.md brief lookup**: Hardcoded `brief.md` caused QC to silently skip on projects that use a different filename (vibekit uses `knowledge-graph-brief.md`). Fix: try `brief.md` → `BRIEF_FILE` from `vibekit.config.sh` → `knowledge-graph-brief.md`.
 
 - Considered but rejected: queuing each as a Ralph task (adds overhead for single-line fixes; the session policy exception for single-file-no-iteration edits exists exactly for this case).
+
+---
+
+<!-- DECISION:007 | domains: conventions, architecture -->
+## DECISION:007 — Rename /plan slash command to /vibeplan
+
+- Files updated: templates/.claude/skills/vibeplan/SKILL.md (renamed from plan/), sandbox/ragtest/.claude/skills/vibeplan/SKILL.md (renamed), init.sh, templates/CLAUDE.md, CLAUDE.md, README.md, knowledge-graph-brief.md, docs/claude/architecture.md, docs/claude/conventions.md, docs/claude/manifest.json
+- Why: `/plan` collides with Claude Code's native `/plan` command, causing ambiguity at invocation. Renaming to `/vibeplan` makes vibekit's planning skill unambiguously distinct.
+- Considered but rejected: namespace prefix like `/vk:plan` (not supported by Claude Code skill trigger format); keeping `/plan` and accepting the collision (too confusing in practice).

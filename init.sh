@@ -64,7 +64,7 @@ mkdir -p "$TARGET_DIR/state"
 mkdir -p "$TARGET_DIR/docs/claude"
 mkdir -p "$TARGET_DIR/specs"
 mkdir -p "$TARGET_DIR/skills"
-mkdir -p "$TARGET_DIR/.claude/skills/plan"
+mkdir -p "$TARGET_DIR/.claude/skills/vibeplan"
 mkdir -p "$TARGET_DIR/.claude/skills/knowledge-graph-sync"
 
 # === 2. Copy scripts/ verbatim ===
@@ -126,8 +126,8 @@ if [[ ! -f "$TARGET_DIR/.gitignore" ]]; then
 fi
 
 # .claude/skills
-cp "$VIBEKIT_DIR/templates/.claude/skills/plan/SKILL.md" \
-   "$TARGET_DIR/.claude/skills/plan/SKILL.md"
+cp "$VIBEKIT_DIR/templates/.claude/skills/vibeplan/SKILL.md" \
+   "$TARGET_DIR/.claude/skills/vibeplan/SKILL.md"
 cp "$VIBEKIT_DIR/templates/.claude/skills/knowledge-graph-sync/SKILL.md" \
    "$TARGET_DIR/.claude/skills/knowledge-graph-sync/SKILL.md"
 
@@ -178,9 +178,9 @@ echo "  1. Write brief.md in $TARGET_DIR"
 echo "     One page describing what you want to build, constraints, and goals."
 echo ""
 echo "  2. Open Claude Code in $TARGET_DIR and run:"
-echo "     /plan brief.md"
+echo "     /vibeplan brief.md"
 echo ""
-echo "     /plan will guide you through scoping the project, then start"
+echo "     /vibeplan will guide you through scoping the project, then start"
 echo "     building it automatically once you confirm the plan."
 echo ""
 echo "  Docs: $VIBEKIT_DIR/README.md"

@@ -1,6 +1,6 @@
 # Tasks: 004-pharmai-scaffold
 
-- [ ] T001 · Rename /plan skill to /vibeplan throughout vibekit
+- [x] T001 · Rename /plan skill to /vibeplan throughout vibekit
 - [ ] T002 · Scaffold ~/pharmai via init.sh + copy ragtest source as rag-engine/
 - [ ] T003 · Customize pharmai with project-specific CLAUDE.md, brief.md, and domain files
 - [ ] T004 · Copy the 14 pre-written project briefs into pharmai/briefs/

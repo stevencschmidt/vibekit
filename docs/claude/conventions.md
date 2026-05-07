@@ -39,7 +39,7 @@ The QC agent emits `[QC_COMPLETE]` (standalone, no T-id) when no gaps remain aga
 
 ## verify_build() Must Be Stack-Aware
 
-`verify_build()` is the only thing standing between a broken commit and `git push`. A `return 0` stub defeats Ralph's 3-strike protection entirely. The `/plan` skill is responsible for writing a stack-appropriate body at bootstrap:
+`verify_build()` is the only thing standing between a broken commit and `git push`. A `return 0` stub defeats Ralph's 3-strike protection entirely. The `/vibeplan` skill is responsible for writing a stack-appropriate body at bootstrap:
 
 | Stack | Minimum verify |
 |-------|----------------|
@@ -49,7 +49,7 @@ The QC agent emits `[QC_COMPLETE]` (standalone, no T-id) when no gaps remain aga
 | Rust | `cargo check --quiet` |
 | Bash-only | `bash -n` on every `.sh` under `scripts/` |
 
-If no plausible verify exists, `/plan` must ask the user rather than write `return 0`.
+If no plausible verify exists, `/vibeplan` must ask the user rather than write `return 0`.
 
 ## Structured Delta Obligation (Sync Agent)
 
@@ -62,7 +62,7 @@ Structured signals cannot be silenced by the four-signal heuristic — they alwa
 
 ## Session Policy
 
-Interactive Claude Code sessions in a vibekit-scaffolded project are for planning and conversation only. Non-trivial implementation, fixes, or debugging go through `/plan` → Ralph, not inline. The policy lives in `templates/CLAUDE.md` under `## Session Policy` and is copied to every scaffolded project. The `/plan` skill ships a Fix/Debug mode for the `/plan <problem description>` invocation path.
+Interactive Claude Code sessions in a vibekit-scaffolded project are for planning and conversation only. Non-trivial implementation, fixes, or debugging go through `/vibeplan` → Ralph, not inline. The policy lives in `templates/CLAUDE.md` under `## Session Policy` and is copied to every scaffolded project. The `/vibeplan` skill ships a Fix/Debug mode for the `/vibeplan <problem description>` invocation path.
 
 ## Skill Format
 
@@ -91,7 +91,7 @@ trigger: /slash-command | internal
 
 ## Archive File Naming
 
-When `ralph.sh` or `/plan` splits a file into active + historical parts, the archive sibling is named `<base>-archive.md` in the same directory:
+When `ralph.sh` or `/vibeplan` splits a file into active + historical parts, the archive sibling is named `<base>-archive.md` in the same directory:
 
 | Active file | Archive file |
 |-------------|-------------|
@@ -109,7 +109,7 @@ bash scripts/sync-agent.sh precompact   # PreCompact hook — fire-and-forget
 bash scripts/sync-agent.sh sessionend   # SessionEnd hook — timeout 10s, best-effort
 ```
 
-Unknown or missing mode defaults to fire-and-forget for safety. This arg must be set in `.claude/settings.json`; the `/plan` skill writes it at bootstrap.
+Unknown or missing mode defaults to fire-and-forget for safety. This arg must be set in `.claude/settings.json`; the `/vibeplan` skill writes it at bootstrap.
 
 ## Atomic Operations
 

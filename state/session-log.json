@@ -213,5 +213,16 @@
     "tasks_completed": [
       "T024"
     ]
+  },
+  {
+    "layer": "ralph",
+    "session": 1,
+    "started": "2026-05-06T23:28:58Z",
+    "ended": "2026-05-07T03:40:53Z",
+    "exit_reason": "TASK_COMPLETE",
+    "estimated_tokens": 0,
+    "tasks_completed": [
+      "T025"
+    ]
   }
 ]

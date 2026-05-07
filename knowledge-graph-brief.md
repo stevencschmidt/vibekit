@@ -174,9 +174,9 @@ disposable working memory. Compaction is only safe when the two are in sync.
 
 ### autoCompactThreshold Verification
 
-The `/plan` skill writes `autoCompactThreshold: 0.5` to `.claude/settings.json`. This
+The `/vibeplan` skill writes `autoCompactThreshold: 0.5` to `.claude/settings.json`. This
 setting must be verified at plan time — if the key is missing or malformed the invariant
-breaks silently. The `/plan` skill's settings verification step (step 7) must read back
+breaks silently. The `/vibeplan` skill's settings verification step (step 7) must read back
 the file after writing and confirm the key is present with value `0.5`. If Claude Code's
 expected key name or format changes across versions, the template must be updated.
 
@@ -242,7 +242,7 @@ proceeds. Nothing is written. No commit is made.
 `brief.md` is not a static input. It must stay current with the project's actual scope.
 Two moments trigger an update:
 
-1. **Post-planning** — the `/plan` skill updates `brief.md` after Phase 3 confirmation to
+1. **Post-planning** — the `/vibeplan` skill updates `brief.md` after Phase 3 confirmation to
    reflect any scope decisions, constraints, or out-of-scope items that emerged during the
    planning conversation but weren't in the original brief.
 2. **Scope change in session** — if the sync agent detects that the project's scope or

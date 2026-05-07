@@ -15,7 +15,7 @@ Three independent pillars:
 
 **1. Knowledge graph** — replaces a monolithic CLAUDE.md with a lean router (~50 lines, always loaded) that points to focused domain files (`docs/claude/`). Each session loads only the files relevant to the current task (~2,500 tokens vs. 8,000–15,000 for a bloated CLAUDE.md). A background sync agent (`sync-agent.sh`) runs on `PreCompact` and `SessionEnd` hooks to persist decisions and patterns before they evaporate.
 
-**2. `/plan` skill** — a structured 3-phase conversation in Claude Code that turns a project brief into a complete, executable plan: knowledge graph files, a spec, and a task list that Ralph can run autonomously. One command, one conversation, one "yes".
+**2. `/vibeplan` skill** — a structured 3-phase conversation in Claude Code that turns a project brief into a complete, executable plan: knowledge graph files, a spec, and a task list that Ralph can run autonomously. One command, one conversation, one "yes".
 
 **3. Ralph** — autonomous bash execution loop. Reads tasks from `state/sync.json`, runs `claude --print` for each task, detects completion sentinels, verifies the build, commits, and loops. Handles rate limits with live countdowns, rolls back partial work on failure, and stops with a structured reason when blocked.
 
@@ -63,16 +63,16 @@ Bootstrap is the highest-stakes invocation in the framework — assumptions made
 
 **Workflow summary:**
 ```
-init.sh → write brief.md → /knowledge-graph-bootstrap → /plan → bash scripts/ralph.sh
+init.sh → write brief.md → /knowledge-graph-bootstrap → /vibeplan → bash scripts/ralph.sh
 ```
 
 ---
 
-## Planning and Building a Feature (`/plan`)
+## Planning and Building a Feature (`/vibeplan`)
 
 Write `brief.md` in your project directory — a plain markdown file describing what you want to build, about a page. Cover what success looks like, any hard constraints, and what's out of scope. No special format required.
 
-Then open Claude Code in your project directory. Before running `/plan`, set the advisor model for better judgment on scope and dependency decisions:
+Then open Claude Code in your project directory. Before running `/vibeplan`, set the advisor model for better judgment on scope and dependency decisions:
 
 ```
 /advisor claude-opus-4-6
@@ -81,10 +81,10 @@ Then open Claude Code in your project directory. Before running `/plan`, set the
 Then run:
 
 ```
-/plan brief.md
+/vibeplan brief.md
 ```
 
-The `/plan` skill runs a 3-phase conversation:
+The `/vibeplan` skill runs a 3-phase conversation:
 
 **Phase 1 — Scope lock** (2–3 exchanges)
 Claude reads the brief and asks three questions: user-visible outcome, hard constraints, out of scope. Confirm or correct.
@@ -263,7 +263,7 @@ my-project/
 
   .claude/
     skills/
-      plan/SKILL.md          # /plan slash command
+      vibeplan/SKILL.md      # /vibeplan slash command
       knowledge-graph-sync/SKILL.md  # Background sync (invoked by hooks only)
     settings.json            # autoCompactThreshold: 0.5 + hook config
 ```
@@ -280,7 +280,7 @@ SESSION_LOG_FILE="$PROJECT_ROOT/state/session-log.json"
 RALPH_PROMPT="$PROJECT_ROOT/scripts/ralph-prompt.md"
 DECISIONS_FILE="$PROJECT_ROOT/state/decisions.md"
 LOG_FILE="$PROJECT_ROOT/state/ralph.log"
-SPEC_TASKS_FILE="$PROJECT_ROOT/specs/001-slug/tasks.md"  # auto-updated by /plan
+SPEC_TASKS_FILE="$PROJECT_ROOT/specs/001-slug/tasks.md"  # auto-updated by /vibeplan
 SKILLS=()                    # e.g. ("typescript" "react") — maps to skills/<name>/manifest.md
 
 verify_build() {
@@ -323,7 +323,7 @@ Optionally add `skills/<name>/verify.sh` for per-skill post-completion verificat
 ```
 1. Write brief.md in your project directory (~1 page)
 2. Open Claude Code in the project directory
-3. /plan brief.md  →  answer 3 rounds  →  yes  →  Ralph starts automatically
+3. /vibeplan brief.md  →  answer 3 rounds  →  yes  →  Ralph starts automatically
 4. Watch progress / tail state/ralph.log
 5. On TASK_BLOCKED: read the reason, fix the task, then resume:
    bash scripts/ralph.sh --task T### --max 50
@@ -339,4 +339,4 @@ verify_build() {
 }
 ```
 
-After the first spec, start the next one with `/plan brief2.md`. The knowledge graph from prior specs loads automatically, so `/plan` asks fewer questions and Ralph stalls less. The system compounds.
+After the first spec, start the next one with `/vibeplan brief2.md`. The knowledge graph from prior specs loads automatically, so `/vibeplan` asks fewer questions and Ralph stalls less. The system compounds.

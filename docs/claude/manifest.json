@@ -2,7 +2,7 @@
   "files": [
     {
       "path": "docs/claude/architecture.md",
-      "summary": "Three-pillar architecture (Knowledge Graph, /plan, Ralph), component map, per-iteration flow, tasks/brief archive split, sync-agent mode dispatch, and key boundaries.",
+      "summary": "Three-pillar architecture (Knowledge Graph, /vibeplan, Ralph), component map, per-iteration flow, tasks/brief archive split, sync-agent mode dispatch, and key boundaries.",
       "tags": ["architecture", "pillars", "components", "ralph", "sync-agent", "qc", "manifest", "boundaries", "archive", "brief"]
     },
     {

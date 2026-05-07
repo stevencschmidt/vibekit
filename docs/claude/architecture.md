@@ -8,7 +8,7 @@
 
 ```
 Pillar 1: Knowledge Graph     — prevents context bloat and rot
-Pillar 2: /plan Skill         — spec + task generation (interactive)
+Pillar 2: /vibeplan Skill      — spec + task generation (interactive)
 Pillar 3: Ralph Execution     — autonomous task execution loop
 ```
 
@@ -54,7 +54,7 @@ The prompt template Claude reads each iteration. Contains task execution rules, 
 
 ### brief.md / brief-archive.md Split
 
-The spec's `brief.md` describes the **current** scope. When `/plan` is invoked in Fix/Debug mode on an existing spec, it trims the brief to reflect the new scope and appends the old content to `brief-archive.md`. The completion QC checks for the existence of `brief-archive.md`; if present, it compares the archived brief against the current `brief.md` and appends a reconciliation task to `tasks.md` if it detects a contradiction (e.g. a removed requirement that was actually implemented).
+The spec's `brief.md` describes the **current** scope. When `/vibeplan` is invoked in Fix/Debug mode on an existing spec, it trims the brief to reflect the new scope and appends the old content to `brief-archive.md`. The completion QC checks for the existence of `brief-archive.md`; if present, it compares the archived brief against the current `brief.md` and appends a reconciliation task to `tasks.md` if it detects a contradiction (e.g. a removed requirement that was actually implemented).
 
 ### scripts/sync-agent.sh
 Hook runner. Invoked by `.claude/settings.json` PreCompact and SessionEnd hooks with a mode argument. Passes the knowledge-graph-sync skill content to `claude --print` as a sidecar process. Mode dispatch:

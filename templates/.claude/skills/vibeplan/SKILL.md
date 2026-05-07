@@ -1,10 +1,10 @@
 ---
-name: plan
-description: The primary entry point for planning a new feature or project with vibekit. Run /plan <brief.md> to start.
-trigger: /plan
+name: vibeplan
+description: The primary entry point for planning a new feature or project with vibekit. Run /vibeplan <brief.md> to start.
+trigger: /vibeplan
 ---
 
-# /plan — vibekit Planning Skill
+# /vibeplan — vibekit Planning Skill
 
 You are running the vibekit planning skill. Your job is to turn a project brief into a complete, executable plan: knowledge graph files, a spec, and a task list that Ralph can run autonomously.
 
@@ -16,8 +16,8 @@ This is a **conversational skill** with 3 phases. Do not skip phases or write fi
 
 When invoked, first determine which mode applies:
 
-- **Build mode** — the argument is a file path (e.g. `/plan brief.md`). Proceed to "Before You Start" below.
-- **Fix mode** — the argument is a problem description (e.g. `/plan the upload button returns 500`), or the user says "fix", "debug", "broken", or "not working". Proceed to "Fix/Debug Mode" below.
+- **Build mode** — the argument is a file path (e.g. `/vibeplan brief.md`). Proceed to "Before You Start" below.
+- **Fix mode** — the argument is a problem description (e.g. `/vibeplan the upload button returns 500`), or the user says "fix", "debug", "broken", or "not working". Proceed to "Fix/Debug Mode" below.
 
 If unclear, ask: "Are you planning a new feature, or investigating/fixing something broken?"
 
@@ -92,7 +92,7 @@ Check whether this is a first run or an existing project:
 - **First run:** No `docs/claude/` domain files exist yet. You will bootstrap the knowledge graph AND create the spec in one conversation.
 - **Subsequent run:** `docs/claude/` files exist. Read them silently as context before Phase 1. The spec will build on existing patterns.
 
-Read the brief file provided as the argument (e.g. `/plan brief.md` → read `brief.md`). Read it silently before asking anything.
+Read the brief file provided as the argument (e.g. `/vibeplan brief.md` → read `brief.md`). Read it silently before asking anything.
 
 ---
 
@@ -257,7 +257,7 @@ Description...
 
 The checkbox list at the top is the progress tracker — Ralph marks `- [ ] T001` as `- [x] T001` when complete. The `##` sections are the full task descriptions Ralph reads and executes.
 
-As tasks complete, `ralph.sh` moves their `## T###` bodies to `tasks-archive.md`. `/plan` only writes to `tasks.md`.
+As tasks complete, `ralph.sh` moves their `## T###` bodies to `tasks-archive.md`. `/vibeplan` only writes to `tasks.md`.
 
 Rules for good tasks:
 - Each task has a single verifiable output

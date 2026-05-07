@@ -15,7 +15,7 @@ Before starting any task, read `docs/claude/manifest.json`. Based on the task at
 This session is for planning and conversation only. Do not implement, fix, or debug code inline.
 
 When asked to build, fix, investigate, or debug anything non-trivial:
-1. Use `/plan` to generate Ralph tasks (new features) or `/plan <problem description>` (fixes/debugging)
+1. Use `/vibeplan` to generate Ralph tasks (new features) or `/vibeplan <problem description>` (fixes/debugging)
 2. Run `bash scripts/ralph.sh` to execute
 
 **Exception:** Single-file edits requiring one tool call with no iteration (e.g. fixing a typo, updating a config value). Knowledge-graph reconciliation after a completed spec also qualifies.
@@ -33,7 +33,7 @@ When asked to build, fix, investigate, or debug anything non-trivial:
 
 ## Decision Log
 
-Total decisions: 006
+Total decisions: 007
 
 Read the last 5 entries from `docs/claude/decisions.md` when making architectural choices.
 
@@ -42,7 +42,7 @@ Read the last 5 entries from `docs/claude/decisions.md` when making architectura
 ## Three Pillars
 
 1. **Knowledge graph** — lean CLAUDE.md router + focused domain files in `docs/claude/`, updated automatically via hooks
-2. **`/plan` skill** — one conversational Claude Code command produces a spec, task list, and populates sync.json for Ralph
+2. **`/vibeplan` skill** — one conversational Claude Code command produces a spec, task list, and populates sync.json for Ralph
 3. **Ralph** — autonomous bash execution loop that runs tasks from `state/sync.json` using `claude --dangerously-skip-permissions --print`
 
 ## Running Ralph
@@ -130,7 +130,7 @@ verify_build() { return 0; }  # project-specific
 
 Two different things share the word "skill":
 - **Vibekit domain skills** (`skills/<name>/manifest.md`) — domain knowledge injected into `ralph-prompt.md` via `{{SKILLS_CONTEXT}}`. Project-specific, zero shipped with vibekit.
-- **Claude Code skills** (`.claude/skills/*/SKILL.md`) — slash commands for interactive sessions. vibekit ships two: `/plan` (planning) and `knowledge-graph-sync` (background hook).
+- **Claude Code skills** (`.claude/skills/*/SKILL.md`) — slash commands for interactive sessions. vibekit ships two: `/vibeplan` (planning) and `knowledge-graph-sync` (background hook).
 
 ## Commit Prefixes
 
