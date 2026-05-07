@@ -93,7 +93,7 @@ On confirmation:
    This session is for planning and conversation only. Do not implement, fix, or debug code inline.
 
    When asked to build, fix, investigate, or debug anything non-trivial:
-   1. Use `/plan` to generate Ralph tasks (new features) or `/plan <problem description>` (fixes/debugging)
+   1. Use `/vibeplan` to generate Ralph tasks (new features) or `/vibeplan <problem description>` (fixes/debugging)
    2. Run `bash scripts/ralph.sh` to execute
 
    **Exception:** Single-file edits requiring one tool call with no iteration (e.g. fixing a typo, updating a config value).
@@ -146,4 +146,4 @@ On confirmation:
 
 ## Done
 
-Tell the user the knowledge graph is initialized and they can now run `/plan <brief.md>` to start speccing features.
+Tell the user the knowledge graph is initialized and they can now run `/vibeplan <brief.md>` to start speccing features.
