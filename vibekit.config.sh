@@ -13,7 +13,7 @@ LOG_FILE="$PROJECT_ROOT/state/ralph.log"
 BRIEF_FILE="$PROJECT_ROOT/knowledge-graph-brief.md"
 QC_PROMPT="$PROJECT_ROOT/scripts/qc-prompt.md"
 
-SPEC_TASKS_FILE="$PROJECT_ROOT/specs/003-monitoring-survival/tasks.md"
+SPEC_TASKS_FILE="$PROJECT_ROOT/specs/004-pharmai-scaffold/tasks.md"
 
 SKILLS=()
 

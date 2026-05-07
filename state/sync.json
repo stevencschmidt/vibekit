@@ -1,13 +1,12 @@
 {
   "ralph": {
-    "task_id": "T025",
-    "task_title": "systemd --user unit installer for reboot survival",
+    "task_id": "T001",
+    "task_title": "Rename /plan skill to /vibeplan throughout vibekit",
     "relevant_files": [
-      "docs/claude/conventions.md",
-      "README.md"
+      "docs/claude/conventions.md"
     ],
-    "last_sentinel": "[TASK_COMPLETE: T024]",
-    "last_updated": "2026-05-07T03:40:53Z",
+    "last_sentinel": null,
+    "last_updated": "2026-05-07T16:00:00Z",
     "session": 1
   },
   "execution": {
