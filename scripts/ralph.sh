@@ -70,7 +70,7 @@ run_all_verifications() {
 
 CREDS_FILE="$HOME/.claude/.credentials.json"
 RATE_LIMIT_BUFFER=30
-MAX_RATE_LIMIT_WAITS=10
+MAX_RATE_LIMIT_WAITS=${MAX_RATE_LIMIT_WAITS:-50}
 
 # Resolve python interpreter (Windows uses 'python', not 'python3')
 if command -v python3 &>/dev/null && python3 -c "" 2>/dev/null; then
@@ -256,6 +256,10 @@ is_rate_limited_output() {
   if echo "$tail_output" | grep -qi "usage limit";       then return 0; fi
   if echo "$tail_output" | grep -qi "too many requests"; then return 0; fi
   if echo "$tail_output" | grep -qi "exceeded.*quota";   then return 0; fi
+  if echo "$tail_output" | grep -qi "5-hour limit";      then return 0; fi
+  if echo "$tail_output" | grep -qi "weekly limit";      then return 0; fi
+  if echo "$tail_output" | grep -qi "subscription limit"; then return 0; fi
+  if echo "$tail_output" | grep -qi "reset at";          then return 0; fi
   return 1
 }
 
@@ -305,6 +309,7 @@ wait_for_reset() {
   echo "     Waiting:         $(( wait_secs / 60 ))m $(( wait_secs % 60 ))s (includes ${RATE_LIMIT_BUFFER}s buffer)"
   echo "     Ctrl+C to stop"
   echo "[$ITERATION] RATE LIMITED ($source) on $task_id — window=$window 5h=${five_util}% 7d=${seven_util}% resets=$reset_time waiting=${wait_secs}s: $(date)" >> "$LOG_FILE"
+  echo "[$ITERATION] RATE_LIMIT until $reset_time ($wait_secs s)" >> "$LOG_FILE"
 
   local remaining=$wait_secs
   while [[ $remaining -gt 0 ]]; do
