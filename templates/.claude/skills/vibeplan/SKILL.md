@@ -20,7 +20,7 @@ Before detecting the mode, check whether Ralph is already running from a previou
 2. If it exists, read the PID value. Run `kill -0 <pid>` to check if the process is alive.
 3. If alive: Say "Ralph is still running (PID `<pid>`). Reconnecting to progress monitoring..." then start monitoring (see "Monitoring Ralph Progress" below). Do not enter planning — return.
 4. If not alive: Read the last 5 lines of `state/ralph.log`. Report: "Ralph process has ended. Last log events: `<last lines>`". Then:
-   - If the last lines contain `SPEC_COMPLETE`: proceed to the multi-brief loop (see "Multi-Brief Sequential Mode" below) to advance to the next brief.
+   - If the last lines contain `SPEC_COMPLETE`: proceed to the multi-brief loop (see "Multi-Brief Sequential Mode" below) to advance to the next brief. To find the briefs directory: check `vibekit.config.sh` for a `BRIEFS_DIR` variable, or check `state/sync.json` for a `briefs_dir` field. If neither exists, ask the user: "What is the briefs directory path?" before proceeding.
    - Otherwise: Ask the user: "Ralph exited unexpectedly. Re-run? (y/n)". On yes, re-launch Ralph (see "Launching Ralph" below).
    - Remove `state/ralph.pid` in either case.
 5. If `state/ralph.pid` does not exist: proceed normally to "Detecting Your Mode".
@@ -30,6 +30,8 @@ Before detecting the mode, check whether Ralph is already running from a previou
 ## Detecting Your Mode
 
 When invoked, first determine which mode applies:
+
+Before matching any mode: if the argument looks like a path (contains `/` or `.` or matches a filename pattern), run `stat` on it. If `stat` confirms it is a directory, treat it as Multi-brief mode regardless of whether it has a trailing slash. Only proceed to Build or Fix mode detection if `stat` confirms a file or the path doesn't exist.
 
 - **Build mode** — the argument is a file path (e.g. `/vibeplan brief.md`). Proceed to "Before You Start" below.
 - **Fix mode** — the argument is a problem description (e.g. `/vibeplan the upload button returns 500`), or the user says "fix", "debug", "broken", or "not working". Proceed to "Fix/Debug Mode" below.
@@ -102,7 +104,7 @@ This runs once, before any specs exist, when `/vibeplan` is given a directory pa
 ### Step A — Load all briefs silently
 
 - Read `<dir>/brief.md` — this is the **project north star** (overall vision, tech stack, out-of-scope). You will use this as context throughout all briefs, but never modify it and never re-ask its content.
-- Read all other `*.md` files in the directory (skip `README.md` if present — that's an ordering hint, not a brief).
+- Read all other `*.md` files in the directory (skip `README.md` and `brief.md` — those are infrastructure files, not briefs to audit).
 - If a `README.md` exists, note its file ordering as a suggestion (not authoritative).
 
 ### Step B — Structural analysis (internal, before presenting anything)
@@ -152,6 +154,11 @@ Apply only what the user confirms:
 ### Step E — Write README.md
 
 Write `<dir>/README.md` with the confirmed final ordered list. Format: one brief filename per line (no markdown, just filenames). This file is the canonical execution sequence — Ralph uses it to find the next brief.
+
+After writing README.md, persist the briefs directory path: update `vibekit.config.sh` to add or update:
+```bash
+BRIEFS_DIR="$PROJECT_ROOT/<relative-path-to-briefs-dir>"
+```
 
 ### Step F — Write audit decision
 
@@ -537,8 +544,10 @@ Stage all changed files and create two commits:
 Start Ralph as a detached background process so it survives if this Claude Code session hits its usage limit:
 
 ```bash
-nohup bash scripts/ralph.sh >> state/ralph.log 2>&1 & echo $! > state/ralph.pid; disown
+nohup bash scripts/ralph.sh >> state/ralph.log 2>&1 & disown
 ```
+
+ralph.sh writes `state/ralph.pid` itself at startup — do not write it here.
 
 The `nohup` + `disown` ensures Ralph keeps running even if the parent Claude Code process exits. Output appends to `state/ralph.log` (not stdout) so history is preserved across sessions.
 
@@ -556,7 +565,7 @@ Translate matched events for the user as they arrive:
 |-----------|---------|
 | `TASK_START task=T003 title=...` | "Ralph → T003 starting: `<title>`" |
 | `TASK_COMPLETE: T003` | "✓ T003 done" |
-| `RATE_LIMIT_WAIT ...` | "Rate limit hit (`<window>` window). Ralph is waiting — will resume automatically." |
+| `RATE_LIMIT until ...` | "Rate limit hit. Ralph is waiting until `<reset_time>` — will resume automatically." |
 | `RATE_LIMIT_RESUMED window=...` | "Rate limit cleared. Ralph resuming..." |
 | `QC_CHECKPOINT n=N` | "Checkpoint QC `<N>` running..." |
 | `QC_FINAL round=1` | "Final QC running..." |
