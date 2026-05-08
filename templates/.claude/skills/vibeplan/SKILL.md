@@ -556,7 +556,7 @@ The `nohup` + `disown` ensures Ralph keeps running even if the parent Claude Cod
 Immediately after launching, monitor `state/ralph.log` using the Monitor tool (or `tail -f ... | grep`):
 
 ```
-tail -f state/ralph.log | grep -E "TASK_START|TASK_COMPLETE|RATE_LIMIT|RATE_LIMIT_RESUMED|QC_CHECKPOINT|QC_FINAL|SPEC_COMPLETE|Stopped:|BUILD_FAIL|STALL"
+tail -f state/ralph.log | grep -E "TASK_START|Completed|RATE_LIMIT|RATE_LIMIT_RESUMED|QC_CHECKPOINT|QC_FINAL|SPEC_COMPLETE|Stopped:|STALLED"
 ```
 
 Translate matched events for the user as they arrive:
@@ -564,13 +564,13 @@ Translate matched events for the user as they arrive:
 | Log event | Display |
 |-----------|---------|
 | `TASK_START task=T003 title=...` | "Ralph → T003 starting: `<title>`" |
-| `TASK_COMPLETE: T003` | "✓ T003 done" |
+| `Completed T003` | "✓ T003 done" |
 | `RATE_LIMIT until ...` | "Rate limit hit. Ralph is waiting until `<reset_time>` — will resume automatically." |
 | `RATE_LIMIT_RESUMED window=...` | "Rate limit cleared. Ralph resuming..." |
 | `QC_CHECKPOINT n=N` | "Checkpoint QC `<N>` running..." |
 | `QC_FINAL round=1` | "Final QC running..." |
 | `SPEC_COMPLETE spec=...` | (see Multi-Brief Loop below) |
-| `Stopped:` / `BUILD_FAIL` / `STALL` | Surface with detail. Stop monitoring. Report outcome using the table below. |
+| `Stopped:` / `STALLED` | Surface with detail. Stop monitoring. Report outcome using the table below. |
 
 Do not block waiting for Ralph — continue responding to the user while monitoring in the background.
 

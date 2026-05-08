@@ -91,7 +91,7 @@ nohup bash scripts/ralph.sh >> state/ralph.log 2>&1 & disown
 Ralph writes `state/ralph.pid` at startup and removes it on all exit paths. Use Monitor (`tail -f | grep`) for per-event progress mid-run:
 
 ```bash
-tail -f state/ralph.log | grep -E "TASK_START|TASK_COMPLETE|RATE_LIMIT|RATE_LIMIT_RESUMED|QC_CHECKPOINT|QC_FINAL|SPEC_COMPLETE|Stopped:|BUILD_FAIL|STALL"
+tail -f state/ralph.log | grep -E "TASK_START|Completed|RATE_LIMIT|RATE_LIMIT_RESUMED|QC_CHECKPOINT|QC_FINAL|SPEC_COMPLETE|Stopped:|STALLED"
 ```
 
 For terminal-state-only notification (no intermediate events), use a poll loop:
