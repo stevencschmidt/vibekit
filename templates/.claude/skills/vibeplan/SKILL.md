@@ -12,12 +12,28 @@ This is a **conversational skill** with 3 phases. Do not skip phases or write fi
 
 ---
 
+## Startup Check — Reconnect Running Ralph
+
+Before detecting the mode, check whether Ralph is already running from a previous session:
+
+1. Check if `state/ralph.pid` exists.
+2. If it exists, read the PID value. Run `kill -0 <pid>` to check if the process is alive.
+3. If alive: Say "Ralph is still running (PID `<pid>`). Reconnecting to progress monitoring..." then start monitoring (see "Monitoring Ralph Progress" below). Do not enter planning — return.
+4. If not alive: Read the last 5 lines of `state/ralph.log`. Report: "Ralph process has ended. Last log events: `<last lines>`". Then:
+   - If the last lines contain `SPEC_COMPLETE`: proceed to the multi-brief loop (see "Multi-Brief Sequential Mode" below) to advance to the next brief.
+   - Otherwise: Ask the user: "Ralph exited unexpectedly. Re-run? (y/n)". On yes, re-launch Ralph (see "Launching Ralph" below).
+   - Remove `state/ralph.pid` in either case.
+5. If `state/ralph.pid` does not exist: proceed normally to "Detecting Your Mode".
+
+---
+
 ## Detecting Your Mode
 
 When invoked, first determine which mode applies:
 
 - **Build mode** — the argument is a file path (e.g. `/vibeplan brief.md`). Proceed to "Before You Start" below.
 - **Fix mode** — the argument is a problem description (e.g. `/vibeplan the upload button returns 500`), or the user says "fix", "debug", "broken", or "not working". Proceed to "Fix/Debug Mode" below.
+- **Multi-brief mode** — the argument is a directory path (e.g. `/vibeplan briefs/`). Detected when the argument ends with `/` or when `stat` confirms it is a directory. If no `specs/` folder exists yet (or it contains no spec subdirectories), enter **Brief Audit Mode** below. Otherwise enter **Multi-Brief Sequential Mode** below.
 
 If unclear, ask: "Are you planning a new feature, or investigating/fixing something broken?"
 
@@ -79,7 +95,110 @@ bash scripts/ralph.sh
 
 ---
 
+## Brief Audit Mode
+
+This runs once, before any specs exist, when `/vibeplan` is given a directory path.
+
+### Step A — Load all briefs silently
+
+- Read `<dir>/brief.md` — this is the **project north star** (overall vision, tech stack, out-of-scope). You will use this as context throughout all briefs, but never modify it and never re-ask its content.
+- Read all other `*.md` files in the directory (skip `README.md` if present — that's an ordering hint, not a brief).
+- If a `README.md` exists, note its file ordering as a suggestion (not authoritative).
+
+### Step B — Structural analysis (internal, before presenting anything)
+
+For each sub-brief, identify:
+1. **Dependencies**: what does this brief assume already exists? (auth, schemas, specific APIs, data models, Docker setup)
+2. **Ordering violations**: does the proposed order (from README.md or alphabetical) satisfy dependencies?
+3. **Gaps**: any required capability not covered by any brief?
+4. **Overlaps**: do two briefs duplicate effort?
+5. **Granularity**: is any brief too large for one Ralph spec (rough guide: >2 independent workstreams that don't share state, or estimated >15 tasks)? Should it split? Are any briefs so small they should merge with a neighbor (rough guide: <3 tasks estimated)?
+
+**Splitting**: Create new sub-brief files with clearly named sub-components (e.g. `P02-ingestion-pipeline.md` → `P02A-ingestion-core.md` + `P02B-async-queue.md`).
+
+**Merging**: Combine content into one file; remove the absorbed file.
+
+### Step C — Present findings in one structured message
+
+```
+Brief Audit — <Project Name> (N sub-briefs found)
+
+Dependency order:
+  ✓ / ⚠  <brief-A> → <brief-B>: <reason if issue>
+
+Structural changes recommended:
+  SPLIT  <filename> — <reason> → <new-file-A> + <new-file-B>
+  MERGE  <filename> into <filename> — <reason>
+
+Gaps:
+  • <description>
+
+Proposed final order (M briefs after restructure):
+  1. <file>  2. <file>  3. <file> ...
+
+Confirm, adjust, or override?
+```
+
+If no changes are needed, say so and confirm the order.
+
+### Step D — Apply confirmed changes
+
+Apply only what the user confirms:
+- **Splits**: create the new sub-brief files, remove the original
+- **Merges**: combine content, remove absorbed file; add a `## Merged from <filename>` header in the merged content
+- **Reorders**: file content unchanged; order lives in README.md only
+- **Gap stubs**: add `## Gap (added by audit): <description>` section to the relevant brief
+
+### Step E — Write README.md
+
+Write `<dir>/README.md` with the confirmed final ordered list. Format: one brief filename per line (no markdown, just filenames). This file is the canonical execution sequence — Ralph uses it to find the next brief.
+
+### Step F — Write audit decision
+
+Append to `state/decisions.md`:
+```
+<!-- DECISION:NNN | domains: project, architecture -->
+## DECISION:NNN — Brief Audit
+
+- Briefs reviewed: N → M after restructure
+- Changes: <list splits, merges, reorders>
+- Why: Dependency ordering, granularity optimization for Ralph execution
+```
+
+Where NNN = next available decision number (read `state/decisions.md` or `docs/claude/decisions.md` to find it).
+
+### Step G — Hand off
+
+Say: "Audit complete. README.md written. Proceeding to plan brief 1 of M: `<filename>`."
+→ Immediately proceed to Multi-Brief Sequential Mode (do not wait for another invocation).
+
+---
+
+## Multi-Brief Sequential Mode
+
+This mode handles planning each brief in the sequence, one at a time, with the master brief always in context.
+
+### Loading the next brief
+
+1. Read `<dir>/brief.md` silently — project north star context. Never ask about it.
+2. Read `<dir>/README.md` — the ordered list of brief filenames (one per line).
+3. For each filename in order, derive the expected spec slug: lowercase the filename and strip the extension (e.g. `P00A-foundation-refactor.md` → `p00a-foundation-refactor`). Check whether `specs/NNN-<slug>/` exists (any NNN prefix). The first filename with no matching spec folder is the **active brief**.
+4. If all briefs have matching spec folders: say "All briefs have been planned and executed. Project complete." Stop.
+5. Read the active brief file. This drives Phase 1–3.
+6. Say: "Loading brief N of M: `<filename>` — project context from `brief.md`."
+
+### During the planning conversation
+
+- The master `brief.md` constraints (tech stack, auth model, out-of-scope items) are silently present — do not re-ask questions it already answers.
+- Spec number: count existing `specs/` folders + 1, zero-padded to 3 digits.
+- Phase 1–3 proceed as normal.
+- After confirmation, go to "On Confirmation" and execute all steps normally. Then immediately go to "Launching Ralph" (do not tell the user to run ralph manually).
+
+---
+
 ## Before You Start
+
+> This section applies to single-brief (file argument) mode only. For directory arguments, see "Multi-Brief Sequential Mode" above.
 
 Check whether `/advisor` is set to Opus. If the user hasn't set it, say:
 
@@ -413,29 +532,60 @@ Stage all changed files and create two commits:
 [plan] NNN-slug — N tasks ready for Ralph
 ```
 
-### 11. Run and monitor Ralph
+### 11. Launching Ralph
 
-Run Ralph to begin execution:
+Start Ralph as a detached background process so it survives if this Claude Code session hits its usage limit:
 
 ```bash
-bash scripts/ralph.sh
+nohup bash scripts/ralph.sh >> state/ralph.log 2>&1 & echo $! > state/ralph.pid; disown
 ```
 
-After Ralph exits, read `state/ralph.status` and parse the last JSON line to get the `event` field. Report the outcome to the user:
+The `nohup` + `disown` ensures Ralph keeps running even if the parent Claude Code process exits. Output appends to `state/ralph.log` (not stdout) so history is preserved across sessions.
+
+### Monitoring Ralph Progress
+
+Immediately after launching, monitor `state/ralph.log` using the Monitor tool (or `tail -f ... | grep`):
+
+```
+tail -f state/ralph.log | grep -E "TASK_START|TASK_COMPLETE|RATE_LIMIT|RATE_LIMIT_RESUMED|QC_CHECKPOINT|QC_FINAL|SPEC_COMPLETE|Stopped:|BUILD_FAIL|STALL"
+```
+
+Translate matched events for the user as they arrive:
+
+| Log event | Display |
+|-----------|---------|
+| `TASK_START task=T003 title=...` | "Ralph → T003 starting: `<title>`" |
+| `TASK_COMPLETE: T003` | "✓ T003 done" |
+| `RATE_LIMIT_WAIT ...` | "Rate limit hit (`<window>` window). Ralph is waiting — will resume automatically." |
+| `RATE_LIMIT_RESUMED window=...` | "Rate limit cleared. Ralph resuming..." |
+| `QC_CHECKPOINT n=N` | "Checkpoint QC `<N>` running..." |
+| `QC_FINAL round=1` | "Final QC running..." |
+| `SPEC_COMPLETE spec=...` | (see Multi-Brief Loop below) |
+| `Stopped:` / `BUILD_FAIL` / `STALL` | Surface with detail. Stop monitoring. Report outcome using the table below. |
+
+Do not block waiting for Ralph — continue responding to the user while monitoring in the background.
+
+### Multi-Brief Loop (directory mode only)
+
+When `SPEC_COMPLETE` is detected in the log:
+
+1. Stop monitoring.
+2. Re-read `<dir>/README.md` and re-scan `specs/` to find the next unstarted brief (same algorithm as "Multi-Brief Sequential Mode" above).
+3. If a next brief exists: say "Spec complete. Next brief: `<filename>` (N of M). Starting planning..." and immediately begin Phase 1 for that brief (loop back to "Multi-Brief Sequential Mode").
+4. If no next brief: say "All M briefs planned and executed. Project complete." Show a one-line summary of all spec folders created.
+
+The user is never prompted to re-invoke `/vibeplan` between briefs.
+
+### Outcome reporting (single-brief or terminal states)
+
+After Ralph exits (for single-brief mode, or on error in multi-brief mode), read `state/ralph.status` and parse the last JSON line for the `event` field:
 
 | event | what to say |
 |-------|-------------|
-| `QC_COMPLETE` | "Brief complete. [Next brief command if applicable]" |
-| `TASK_BLOCKED` | "Blocked on [summary]. Fix then: `bash scripts/ralph.sh --task T###`" |
+| `QC_COMPLETE` | "Brief complete." |
+| `TASK_BLOCKED` | "Blocked on `<summary>`. Fix then: `bash scripts/ralph.sh --task T###`" |
 | `TASK_STALL` | "Stalled 3×. Check `state/ralph.log` for details." |
-| `VERIFY_FAILED` | "verify_build() failed 3×. Fix the verify command or task." |
+| `VERIFY_FAILED` | "`verify_build()` failed 3×. Fix the verify command or task." |
 | `MAX_ITER` | "Hit iteration limit. Re-run `bash scripts/ralph.sh` to continue." |
 | `INTERRUPTED` | "Stopped. Re-run `bash scripts/ralph.sh` to resume." |
 | `RATE_LIMIT_CAP` | "Rate limit cap hit. Wait for reset then re-run." |
-
-**If `event` is `QC_COMPLETE` and a `briefs/` directory exists:**
-Read `briefs/README.md` to identify the next unstarted brief. Give the user the exact command:
-```
-/vibeplan briefs/<next>.md
-```
-If all briefs are complete, declare the project complete.
