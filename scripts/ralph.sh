@@ -281,7 +281,7 @@ wait_for_reset() {
       remaining=$(( remaining - 1 ))
     done
     printf "\r     Resuming now...          \n"
-    echo "[$ITERATION] RATE_LIMIT_RESUMED window=unknown: $(date)" >> "$LOG_FILE"
+    echo "[$ITERATION] RATE_LIMIT_RESUMED window=api-unreachable: $(date)" >> "$LOG_FILE"
     echo "[$ITERATION] Rate limit wait complete — retrying $task_id: $(date)" >> "$LOG_FILE"
     return
   fi
@@ -420,7 +420,6 @@ _ralph_interrupted() {
     git -C "$PROJECT_ROOT" reset --hard "$PRE_SHA" 2>/dev/null || true
   fi
   notify_exit "INTERRUPTED" "ralph caught SIGINT/SIGTERM"
-  rm -f "${SYNC_FILE%/*}/ralph.pid" 2>/dev/null || true
   echo "=== Stopped: interrupted at $(date) ===" >> "$LOG_FILE" 2>/dev/null || true
   exit 130
 }
@@ -518,6 +517,7 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
   ITERATION=$((ITERATION + 1))
 
   TASK_ID=$(sync_read "ralph.task_id" 2>/dev/null || echo "")
+  TASK_TITLE=$(sync_read "ralph.task_title" 2>/dev/null || echo "")
 
   if [[ -z "$TASK_ID" || "$TASK_ID" == "null" ]]; then
     # All scheduled tasks complete — enter QC loop if enabled
@@ -606,7 +606,11 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
       session_log_append "ralph" "$RALPH_SESSION" "$SESSION_START_ISO" "$_qc_end_iso" \
         "QC_COMPLETE" "0" "$_qc_tasks_json" 2>/dev/null || true
       commit_state_files "QC_COMPLETE"
-      _SPEC_SLUG=$(basename "$(dirname "${SPEC_TASKS_FILE:-$PROJECT_ROOT/brief.md}")" 2>/dev/null || echo "unknown")
+      if [[ -n "${SPEC_TASKS_FILE:-}" ]]; then
+        _SPEC_SLUG=$(basename "$(dirname "$SPEC_TASKS_FILE")" 2>/dev/null || echo "unknown")
+      else
+        _SPEC_SLUG="unknown"
+      fi
       echo "[$ITERATION] SPEC_COMPLETE spec=$_SPEC_SLUG: $(date)" >> "$LOG_FILE"
       exit 0
     fi
