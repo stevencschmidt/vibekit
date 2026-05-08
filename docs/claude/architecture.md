@@ -82,14 +82,36 @@ Entry point for setting up a new project. Copies scripts, templates, creates dir
 
 ### Inline Monitoring Pattern
 
-When running Ralph from an interactive Claude Code session, use `Bash run_in_background` with a poll loop for terminal events — not a persistent Monitor `tail -f` pipe (which buffers notifications). Example:
+The `/vibeplan` skill launches Ralph as a detached background process:
 
 ```bash
-# One notification when Ralph reaches any terminal state
+nohup bash scripts/ralph.sh >> state/ralph.log 2>&1 & disown
+```
+
+Ralph writes `state/ralph.pid` at startup and removes it on all exit paths. Use Monitor (`tail -f | grep`) for per-event progress mid-run:
+
+```bash
+tail -f state/ralph.log | grep -E "TASK_START|TASK_COMPLETE|RATE_LIMIT|RATE_LIMIT_RESUMED|QC_CHECKPOINT|QC_FINAL|SPEC_COMPLETE|Stopped:|BUILD_FAIL|STALL"
+```
+
+For terminal-state-only notification (no intermediate events), use a poll loop:
+
+```bash
 until grep -qE "QC_COMPLETE|Stopped:|Completed:" state/ralph.log; do sleep 5; done
 ```
 
-Use Monitor (`tail -f | grep`) only for per-event progress notifications mid-run.
+**New log events** (added for vibeplan monitoring):
+- `TASK_START task=T### title=...` — fires before each Claude invocation
+- `RATE_LIMIT_RESUMED window=...` — fires when the rate-limit countdown ends (two variants: `window=<name>` for API-reachable resets, `window=api-unreachable` for connectivity failures)
+- `QC_FINAL round=N` — fires before each final QC round
+- `QC_CHECKPOINT n=N` — fires before each checkpoint QC round
+- `SPEC_COMPLETE spec=<slug>` — fires inside the `exit 0` path of QC_COMPLETE, before Ralph exits
+
+**Multi-brief orchestration** (see vibeplan SKILL.md for details):
+- `/vibeplan briefs/` runs a one-time brief audit, then a planning+execution loop across all briefs
+- On `SPEC_COMPLETE`, vibeplan automatically advances to Phase 1 of the next brief
+- `vibekit.config.sh` stores `BRIEFS_DIR` so the directory can be recovered on session restart
+- On session restart, `/vibeplan` checks `state/ralph.pid` and reconnects to a live Ralph process
 
 ---
 
