@@ -11,3 +11,6 @@ __pycache__/
 
 # Sandboxed test environment (gitignored, not for distribution)
 sandbox/
+
+# Git worktrees
+.worktrees/
