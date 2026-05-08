@@ -281,6 +281,7 @@ wait_for_reset() {
       remaining=$(( remaining - 1 ))
     done
     printf "\r     Resuming now...          \n"
+    echo "[$ITERATION] RATE_LIMIT_RESUMED window=unknown: $(date)" >> "$LOG_FILE"
     echo "[$ITERATION] Rate limit wait complete — retrying $task_id: $(date)" >> "$LOG_FILE"
     return
   fi
@@ -318,6 +319,7 @@ wait_for_reset() {
     remaining=$(( remaining - 1 ))
   done
   printf "\r     Resuming now...          \n"
+  echo "[$ITERATION] RATE_LIMIT_RESUMED window=$window: $(date)" >> "$LOG_FILE"
   echo "[$ITERATION] Rate limit wait complete — retrying $task_id: $(date)" >> "$LOG_FILE"
 }
 
@@ -382,6 +384,7 @@ notify_exit() {
     >> "$PROJECT_ROOT/state/ralph.status" 2>/dev/null || true
   command -v notify-send >/dev/null 2>&1 && \
     notify-send "vibekit/$event" "$summary" 2>/dev/null || true
+  rm -f "${SYNC_FILE%/*}/ralph.pid" 2>/dev/null || true
   printf '\a' > /dev/tty 2>/dev/null || true
 }
 
@@ -417,6 +420,7 @@ _ralph_interrupted() {
     git -C "$PROJECT_ROOT" reset --hard "$PRE_SHA" 2>/dev/null || true
   fi
   notify_exit "INTERRUPTED" "ralph caught SIGINT/SIGTERM"
+  rm -f "${SYNC_FILE%/*}/ralph.pid" 2>/dev/null || true
   echo "=== Stopped: interrupted at $(date) ===" >> "$LOG_FILE" 2>/dev/null || true
   exit 130
 }
@@ -429,6 +433,9 @@ fi
 echo "" >> "$LOG_FILE"
 echo "=== Run started: $(date) ===" >> "$LOG_FILE"
 echo "Tool: $TOOL | Model: $MODEL | Max: $MAX_ITERATIONS" >> "$LOG_FILE"
+
+# Write PID file so parent session can detect if Ralph is running
+echo $$ > "${SYNC_FILE%/*}/ralph.pid"
 
 # === Pre-flight Summary ===
 PREFLIGHT_TASK_ID=$(sync_read "ralph.task_id" 2>/dev/null || echo "null")
@@ -539,6 +546,7 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
     echo "─────────────────────────────────────────"
     echo "  QC Round $QC_ROUND/$MAX_QC_ROUNDS — reviewing against brief.md"
     echo "─────────────────────────────────────────"
+    echo "[$ITERATION] QC_FINAL round=$QC_ROUND: $(date)" >> "$LOG_FILE"
     echo "[QC-$QC_ROUND] Starting QC review: $(date)" >> "$LOG_FILE"
 
     # Pre-QC usage check
@@ -598,6 +606,8 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
       session_log_append "ralph" "$RALPH_SESSION" "$SESSION_START_ISO" "$_qc_end_iso" \
         "QC_COMPLETE" "0" "$_qc_tasks_json" 2>/dev/null || true
       commit_state_files "QC_COMPLETE"
+      _SPEC_SLUG=$(basename "$(dirname "${SPEC_TASKS_FILE:-$PROJECT_ROOT/brief.md}")" 2>/dev/null || echo "unknown")
+      echo "[$ITERATION] SPEC_COMPLETE spec=$_SPEC_SLUG: $(date)" >> "$LOG_FILE"
       exit 0
     fi
 
@@ -644,6 +654,7 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
   fi
 
   echo "[$ITERATION] Starting $TASK_ID: $(date)" >> "$LOG_FILE"
+  echo "[$ITERATION] TASK_START task=$TASK_ID title=${TASK_TITLE:-}: $(date)" >> "$LOG_FILE"
 
   # Save HEAD SHA for rollback
   PRE_SHA=$(git -C "$PROJECT_ROOT" rev-parse HEAD)
@@ -880,6 +891,7 @@ print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
           echo "─────────────────────────────────────────"
           echo "  Checkpoint QC $CHECKPOINT_QC_ROUND — reviewing after $TASKS_SINCE_CHECKPOINT tasks"
           echo "─────────────────────────────────────────"
+          echo "[$ITERATION] QC_CHECKPOINT n=$CHECKPOINT_QC_ROUND: $(date)" >> "$LOG_FILE"
           echo "[CKPT-$CHECKPOINT_QC_ROUND] Starting checkpoint QC: $(date)" >> "$LOG_FILE"
           if [[ "$SKIP_QC" != "true" && -f "$_CKPT_QC_PROMPT" && -f "$_CKPT_BRIEF_FILE" ]]; then
             if ! check_usage_before_iteration "CKPT-$CHECKPOINT_QC_ROUND"; then
