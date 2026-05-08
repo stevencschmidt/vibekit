@@ -1,6 +1,13 @@
-sandbox/
-state/ralph.log
-state/ralph.status
+# Credentials (never commit)
+.env
+
+# Runtime state (project-specific, not for public repo)
+state/
 __pycache__/
-*.pyc
+
+# System files
 .DS_Store
+*.pyc
+
+# Sandboxed test environment (gitignored, not for distribution)
+sandbox/

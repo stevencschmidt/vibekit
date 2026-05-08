@@ -282,8 +282,9 @@ Write `T001` into `ralph.task_id`, the task title into `ralph.task_title`, and t
 
 If T001 has no `Relevant:` line, write an empty array.
 
-### 6. Update brief.md
+### 6. Update brief.md (or sub-brief if multi-brief project)
 
+**For single-brief projects:**
 Update `brief.md` to reflect any scope decisions, constraints, or out-of-scope items that
 emerged during the planning conversation (Phases 1–2) but were not in the original brief.
 Do not rewrite the brief — append or correct only what changed. If the brief already
@@ -299,15 +300,28 @@ If they confirm, append the prior `brief.md` content to `brief-archive.md` with 
 `## Archived <YYYY-MM-DD>: <reason>` header, then write the trimmed `brief.md`.
 For simple fix tasks or minor additions, leave `brief.md` unchanged.
 
-### 7. Update SPEC_TASKS_FILE in vibekit.config.sh
+**For multi-brief projects** (if the argument is a file in `briefs/` directory):
+The master `brief.md` at the root is the unchanging project vision — do not modify it.
+Instead, scope adjustments from this planning conversation go into the sub-brief file itself
+(e.g., `briefs/P00B-authentication.md`). Append or correct only what changed in that file.
 
-Update the `SPEC_TASKS_FILE` line in `vibekit.config.sh` to point to this spec's tasks.md:
+### 7. Update config in vibekit.config.sh
+
+Update the `SPEC_TASKS_FILE` line to point to this spec's tasks.md:
 
 ```bash
 SPEC_TASKS_FILE="$PROJECT_ROOT/specs/NNN-slug/tasks.md"
 ```
 
-Replace the existing `SPEC_TASKS_FILE=` line with the correct path for this spec. This ensures Ralph reads the right tasks.md without any manual config change.
+**For multi-brief projects** (if the argument was a file in `briefs/` directory):
+Also update `BRIEF_FILE` to point to the specific sub-brief currently being planned:
+
+```bash
+BRIEF_FILE="$PROJECT_ROOT/briefs/PNN-slug.md"
+```
+
+This makes QC precise — the QC agent compares against the *specific brief* being executed,
+not the master `brief.md`. This is essential for accurate feedback across 10+ sequential briefs.
 
 ### 8. Populate verify_build() in vibekit.config.sh
 
