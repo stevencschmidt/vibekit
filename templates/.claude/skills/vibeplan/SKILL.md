@@ -413,12 +413,29 @@ Stage all changed files and create two commits:
 [plan] NNN-slug — N tasks ready for Ralph
 ```
 
-### 11. Run Ralph
+### 11. Run and monitor Ralph
 
-Run Ralph to begin execution immediately:
+Run Ralph to begin execution:
 
 ```bash
 bash scripts/ralph.sh
 ```
 
-Do not print instructions — just run the script. The user confirmed the plan; execution begins now.
+After Ralph exits, read `state/ralph.status` and parse the last JSON line to get the `event` field. Report the outcome to the user:
+
+| event | what to say |
+|-------|-------------|
+| `QC_COMPLETE` | "Brief complete. [Next brief command if applicable]" |
+| `TASK_BLOCKED` | "Blocked on [summary]. Fix then: `bash scripts/ralph.sh --task T###`" |
+| `TASK_STALL` | "Stalled 3×. Check `state/ralph.log` for details." |
+| `VERIFY_FAILED` | "verify_build() failed 3×. Fix the verify command or task." |
+| `MAX_ITER` | "Hit iteration limit. Re-run `bash scripts/ralph.sh` to continue." |
+| `INTERRUPTED` | "Stopped. Re-run `bash scripts/ralph.sh` to resume." |
+| `RATE_LIMIT_CAP` | "Rate limit cap hit. Wait for reset then re-run." |
+
+**If `event` is `QC_COMPLETE` and a `briefs/` directory exists:**
+Read `briefs/README.md` to identify the next unstarted brief. Give the user the exact command:
+```
+/vibeplan briefs/<next>.md
+```
+If all briefs are complete, declare the project complete.

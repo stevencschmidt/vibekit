@@ -9,9 +9,27 @@ vibekit ships as a standalone repo. `init.sh` scaffolds the system into any targ
 
 ---
 
-## How It Works
+## How it works in one session
 
-Three independent pillars:
+Write a brief, run one command, watch it build:
+
+```
+User writes brief.md
+  → opens Claude Code in project directory
+  → runs /vibeplan brief.md
+  → 3-phase conversation (scope / structure / confirm)
+  → types "yes"
+  → Claude writes spec + tasks, starts Ralph automatically
+  → Ralph executes tasks autonomously, commits each one
+  → QC loop reviews against brief.md
+  → emits QC_COMPLETE when done
+```
+
+No separate commands after "yes". Ralph runs, verifies, commits, and QCs — all without supervision. When it finishes, Claude reports the outcome and (for multi-brief projects) tells you the exact command to start the next phase.
+
+---
+
+## Three pillars
 
 **1. Knowledge graph** — replaces a monolithic CLAUDE.md with a lean router (~50 lines, always loaded) that points to focused domain files (`docs/claude/`). Each session loads only the files relevant to the current task (~2,500 tokens vs. 8,000–15,000 for a bloated CLAUDE.md). A background sync agent (`sync-agent.sh`) runs on `PreCompact` and `SessionEnd` hooks to persist decisions and patterns before they evaporate.
 
@@ -35,7 +53,7 @@ Three independent pillars:
 
 **1. Clone vibekit:**
 ```bash
-git clone <vibekit-repo> ~/vibekit
+git clone https://github.com/stevencschmidt/vibekit ~/vibekit
 ```
 
 **2. Scaffold into your project:**
@@ -152,6 +170,32 @@ Ralph reads `state/sync.json` for the current task, runs Claude to execute it, v
 8. When all tasks complete: enters QC loop — runs Claude against `brief.md` to find gaps, appends new tasks if found, repeats until `[QC_COMPLETE]` (use `--skip-qc` to bypass)
 
 **Rate limits:** Ralph checks OAuth usage before each iteration and detects rate limit messages in output. On limit, it calculates the exact reset time and shows a live countdown. Rate limits do not count against the stall counter.
+
+---
+
+## Multi-brief projects
+
+Large projects decompose into sequential briefs — one per major phase or feature area. The knowledge graph accumulates across all of them automatically.
+
+```
+briefs/
+  README.md            # execution sequence + dependency graph
+  P00A-foundation.md   # phase 1 brief
+  P00B-auth.md         # phase 2 brief
+  P01-schema.md        # phase 3 brief
+  ...
+```
+
+Run one brief at a time:
+```
+/vibeplan briefs/P00A-foundation.md  →  Ralph runs  →  QC_COMPLETE
+/vibeplan briefs/P00B-auth.md        →  Ralph runs  →  QC_COMPLETE
+...
+```
+
+After each `QC_COMPLETE`, Claude reads `briefs/README.md` and gives you the exact command to start the next phase. The master `brief.md` at the root stays as the unchanging project vision — sub-brief scope adjustments go into the individual brief files.
+
+By brief 5, `/vibeplan` asks fewer questions and Ralph stalls less — the knowledge graph compounds.
 
 ---
 
@@ -281,6 +325,7 @@ RALPH_PROMPT="$PROJECT_ROOT/scripts/ralph-prompt.md"
 DECISIONS_FILE="$PROJECT_ROOT/state/decisions.md"
 LOG_FILE="$PROJECT_ROOT/state/ralph.log"
 SPEC_TASKS_FILE="$PROJECT_ROOT/specs/001-slug/tasks.md"  # auto-updated by /vibeplan
+BRIEF_FILE="$PROJECT_ROOT/brief.md"                      # auto-updated for multi-brief projects
 SKILLS=()                    # e.g. ("typescript" "react") — maps to skills/<name>/manifest.md
 
 verify_build() {
@@ -339,4 +384,4 @@ verify_build() {
 }
 ```
 
-After the first spec, start the next one with `/vibeplan brief2.md`. The knowledge graph from prior specs loads automatically, so `/vibeplan` asks fewer questions and Ralph stalls less. The system compounds.
+After the first spec, start the next one with `/vibeplan brief2.md` (or `/vibeplan briefs/next.md` for multi-brief projects). The knowledge graph from prior specs loads automatically, so `/vibeplan` asks fewer questions and Ralph stalls less. The system compounds.
