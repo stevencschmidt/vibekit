@@ -41,6 +41,64 @@ If unclear, ask: "Are you planning a new feature, or investigating/fixing someth
 
 ---
 
+## Design Files (optional)
+
+If a `design/` subdirectory exists adjacent to the brief, `/vibeplan` loads every
+`*.md` inside as ambient context for every planning phase and runs the active-analysis
+audit pass (see "Active-Analysis Audit Pass" below) before Phase 1 scope-lock
+questions.
+
+**Location rule** (single rule, applied across all modes):
+
+| Brief argument                | Design directory checked |
+|-------------------------------|--------------------------|
+| `/vibeplan brief.md` (root)   | `./design/`              |
+| `/vibeplan briefs/P00A.md`    | `briefs/design/`         |
+| `/vibeplan briefs/`           | `briefs/design/`         |
+
+If the directory does not exist or is empty, proceed without comment — design files
+are optional.
+
+**File convention:** Any `*.md` file inside `design/` is a design file. Subdirectories
+are ignored in v1. No README, no ordering — designs are ambient context.
+
+**Recommended (non-enforced) layout template** — for web-app screens:
+
+```markdown
+# Screen: <name>
+
+## Route
+`/path/to/screen`
+
+## Layout
+(ASCII sketch, mermaid flowchart, or numbered list — name every interactive element
+so it can be referenced: `btn-submit`, `field-email`, `link-forgot-password`.)
+
+## Elements
+| id              | type   | label / behavior                       |
+| --------------- | ------ | -------------------------------------- |
+| field-email     | input  | email; required                        |
+| btn-submit      | button | submits form; → Dashboard on success   |
+
+## States
+- empty / default
+- loading / submitting
+- error (per field; global)
+- success (where does the user land?)
+
+## Open questions
+Anything you already know is undefined.
+```
+
+The **Elements** table is the audit's extraction surface — naming each interactive
+element lets the audit enumerate fields/buttons and target questions per element.
+
+For other design types (architecture, data model, API contracts, glossary), use plain
+markdown with `mermaid` fenced blocks where helpful. Image-only mockups (PNG, Figma)
+are NOT supported.
+
+---
+
 ## Fix/Debug Mode
 
 Your job is to write diagnostic and fix tasks for Ralph — **not to investigate the problem yourself**. Do not run commands, read logs, or explore code. Every investigation and fix happens in a fresh Ralph session with clean context.
@@ -105,6 +163,10 @@ This runs once, before any specs exist, when `/vibeplan` is given a directory pa
 
 - Read `<dir>/brief.md` — this is the **project north star** (overall vision, tech stack, out-of-scope). You will use this as context throughout all briefs, but never modify it and never re-ask its content.
 - Read all other `*.md` files in the directory (skip `README.md` and `brief.md` — those are infrastructure files, not briefs to audit).
+- After loading briefs, also read every `*.md` file in `<dir>/design/` if the
+  directory exists. These are not audited as briefs — they are loaded as ambient
+  context and feed the active-analysis audit pass (see "Active-Analysis Audit Pass"
+  below).
 - If a `README.md` exists, note its file ordering as a suggestion (not authoritative).
 
 ### Step B — Structural analysis (internal, before presenting anything)
@@ -115,6 +177,9 @@ For each sub-brief, identify:
 3. **Gaps**: any required capability not covered by any brief?
 4. **Overlaps**: do two briefs duplicate effort?
 5. **Granularity**: is any brief too large for one Ralph spec (rough guide: >2 independent workstreams that don't share state, or estimated >15 tasks)? Should it split? Are any briefs so small they should merge with a neighbor (rough guide: <3 tasks estimated)?
+
+**File filtering when enumerating briefs:** skip `README.md`, `brief.md`, and any
+path under a `design/` subdirectory.
 
 **Splitting**: Create new sub-brief files with clearly named sub-components (e.g. `P02-ingestion-pipeline.md` → `P02A-ingestion-core.md` + `P02B-async-queue.md`).
 
@@ -137,6 +202,8 @@ Gaps:
 
 Proposed final order (M briefs after restructure):
   1. <file>  2. <file>  3. <file> ...
+
+Design files loaded: N  (architecture.md, data-model.md, ...)   [omit line if 0]
 
 Confirm, adjust, or override?
 ```
@@ -188,11 +255,15 @@ This mode handles planning each brief in the sequence, one at a time, with the m
 ### Loading the next brief
 
 1. Read `<dir>/brief.md` silently — project north star context. Never ask about it.
+1a. Read every `*.md` in `<dir>/design/` if the directory exists. These are ambient
+    context — loaded silently, never asked about, and feed the audit pass.
 2. Read `<dir>/README.md` — the ordered list of brief filenames (one per line).
 3. For each filename in order, derive the expected spec slug: lowercase the filename and strip the extension (e.g. `P00A-foundation-refactor.md` → `p00a-foundation-refactor`). Check whether `specs/NNN-<slug>/` exists (any NNN prefix). The first filename with no matching spec folder is the **active brief**.
 4. If all briefs have matching spec folders: say "All briefs have been planned and executed. Project complete." Stop.
 5. Read the active brief file. This drives Phase 1–3.
-6. Say: "Loading brief N of M: `<filename>` — project context from `brief.md`."
+6. Say: "Loading brief N of M: `<filename>` — project context from `brief.md`
+   [+ N design files]." (omit the "+ N design files" suffix if no design files
+   loaded.)
 
 ### During the planning conversation
 
@@ -219,6 +290,10 @@ Check whether this is a first run or an existing project:
 - **Subsequent run:** `docs/claude/` files exist. Read them silently as context before Phase 1. The spec will build on existing patterns.
 
 Read the brief file provided as the argument (e.g. `/vibeplan brief.md` → read `brief.md`). Read it silently before asking anything.
+
+Also read every `*.md` in `<brief-dir>/design/` if the directory exists, where
+`<brief-dir>` is the parent directory of the brief file. These are loaded silently as
+ambient context and feed the audit pass run before Phase 1.
 
 ---
 

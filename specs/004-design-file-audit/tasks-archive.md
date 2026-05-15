@@ -67,3 +67,44 @@ Commit with `[ralph] T002 complete — ralph.sh empty SPEC_TASKS_FILE handling`.
 
 ---
 
+## T003 · Add Design files subsection to docs/claude/architecture.md + manifest tag
+Depends on: T002
+Verify: `grep -q "### Design files (optional)" docs/claude/architecture.md` exits 0 AND `python3 -c "import json; m=json.load(open('docs/claude/manifest.json')); arch=[f for f in m['files'] if f['path']=='docs/claude/architecture.md'][0]; assert 'design' in arch['tags']"` exits 0
+Relevant: docs/claude/architecture.md, docs/claude/conventions.md
+
+Add the design-file convention to the knowledge graph.
+
+**Edit 1 — `docs/claude/architecture.md`:** Insert a new subsection under the
+**Components** section, immediately after the existing **Multi-brief orchestration**
+bullets in the inline-monitoring section. Content:
+
+```markdown
+### Design files (optional)
+
+A `<brief-dir>/design/` subdirectory may contain any number of `*.md` files
+describing the project's design constraints (architecture, data model, API contracts,
+UX flows, screen layouts, glossary). When present, `/vibeplan` loads them as ambient
+context across every brief and every planning phase and runs an audit pass that
+surfaces concerns (coverage gaps, missing sections, UX inconsistencies, brief
+contradictions, scope creep, ambiguous interactions) before Phase 1's scope-lock
+questions. The audit flags concerns; it does not propose solutions.
+
+Design files are not audited or loaded by QC — verification remains driven by task
+`Verify:` commands and brief success criteria.
+
+Format: plain markdown, optionally with `mermaid` fenced blocks for diagrams and
+ASCII sketches for layouts. Image-only mockups (PNG, Figma exports) are not
+supported. The recommended layout-file template names every interactive element via
+an Elements table so the audit can enumerate fields/buttons/lists and target
+questions per element. See `templates/.claude/skills/vibeplan/SKILL.md` for the full
+templates.
+```
+
+**Edit 2 — `docs/claude/manifest.json`:** Locate the entry for
+`"path": "docs/claude/architecture.md"` and append `"design"` to its `tags` array.
+Keep the JSON valid (commas, no trailing commas). Do not modify other entries.
+
+Commit with `[ralph] T003 complete — design-file convention in architecture.md`.
+
+---
+
