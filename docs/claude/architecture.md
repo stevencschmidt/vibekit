@@ -28,6 +28,8 @@ Autonomous execution loop. Per iteration:
 6. After a successful task, increments `TASKS_SINCE_CHECKPOINT`; fires a checkpoint QC round if `>= CHECKPOINT_QC_EVERY` (default 3) AND ≥2 unchecked tasks remain
 7. When all tasks are `[x]`, fires completion QC; exits on `[QC_COMPLETE]`
 
+Empty `SPEC_TASKS_FILE` in `vibekit.config.sh` produces a clean preflight error (exit 2) with guidance to run `/vibeplan`; this check fires after the preflight summary and before any task execution or `--dry-run` exit.
+
 ### scripts/qc-prompt.md
 Prompt template for the QC agent. Two invocation contexts:
 - **Completion QC** (post-all-tasks) — reads brief.md, surveys the codebase, emits `[QC_COMPLETE]` or appends new tasks to `tasks.md`

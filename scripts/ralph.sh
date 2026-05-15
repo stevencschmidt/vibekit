@@ -478,6 +478,11 @@ if [[ -z "$PREFLIGHT_TASK_ID" || "$PREFLIGHT_TASK_ID" == "null" ]]; then
   fi
 fi
 
+if [[ -z "${SPEC_TASKS_FILE:-}" ]]; then
+  echo "ERROR: SPEC_TASKS_FILE is empty in vibekit.config.sh — no active spec. Run /vibeplan to create one." >&2
+  exit 2
+fi
+
 # === Resume: override task_id if --task was given ===
 if [[ -n "$RESUME_TASK" ]]; then
   echo "Resuming at task: $RESUME_TASK"
