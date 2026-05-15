@@ -33,7 +33,7 @@ When asked to build, fix, investigate, or debug anything non-trivial:
 
 ## Decision Log
 
-Total decisions: 007
+Total decisions: 008
 
 Read the last 5 entries from `docs/claude/decisions.md` when making architectural choices.
 

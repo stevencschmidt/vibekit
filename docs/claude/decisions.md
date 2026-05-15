@@ -74,3 +74,12 @@ Append-only audit log. Each entry has an anchor for precise retrieval.
 - Files updated: templates/.claude/skills/vibeplan/SKILL.md (renamed from plan/), sandbox/ragtest/.claude/skills/vibeplan/SKILL.md (renamed), init.sh, templates/CLAUDE.md, CLAUDE.md, README.md, knowledge-graph-brief.md, docs/claude/architecture.md, docs/claude/conventions.md, docs/claude/manifest.json
 - Why: `/plan` collides with Claude Code's native `/plan` command, causing ambiguity at invocation. Renaming to `/vibeplan` makes vibekit's planning skill unambiguously distinct.
 - Considered but rejected: namespace prefix like `/vk:plan` (not supported by Claude Code skill trigger format); keeping `/plan` and accepting the collision (too confusing in practice).
+
+---
+
+<!-- DECISION:008 | domains: architecture, conventions -->
+## DECISION:008 — Design files as ambient context + active audit pass
+
+- Files updated: specs/004-design-file-audit/{spec.md,tasks.md} (new), state/sync.json, vibekit.config.sh; subsequent ralph tasks edit docs/claude/{architecture.md,manifest.json}, templates/.claude/skills/vibeplan/SKILL.md, scripts/qc-prompt.md, CHANGELOG.md.
+- Why: Briefs alone leave gaps on UX and data flow. A `<brief-dir>/design/` directory of markdown files (layouts, data models, API contracts, glossaries) gives `/vibeplan` enough material to interrogate the project before any tasks are written. The audit runs open-endedly — its goal is to surface every concern (coverage gaps, missing sections, cross-screen inconsistencies, brief contradictions, scope creep), not just a fixed checklist. `/vibeplan` identifies; the user decides. Caught issues during the briefing stage are far cheaper than caught issues mid-Ralph.
+- Considered but rejected: per-brief `applies_to:` frontmatter scoping (premature for v1 — ambient is simpler and matches the master `brief.md` pattern); QC reading design files (subjective "design adherence" flags would generate false-positive QC tasks; verify stays driven by task `Verify:` commands); image-only mockups (PNG/Figma — cannot be diffed or reasoned over); a separate `docs/claude/design.md` domain file (the convention is a one-paragraph addition to `architecture.md`, not its own domain).
