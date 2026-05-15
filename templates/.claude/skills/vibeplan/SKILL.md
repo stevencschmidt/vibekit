@@ -297,7 +297,95 @@ ambient context and feed the audit pass run before Phase 1.
 
 ---
 
+## Active-Analysis Audit Pass
+
+> This pass runs once, before Phase 1's scope-lock questions, whenever design files
+> have been loaded. It does not run if no design files exist.
+
+Audit every design file against the brief, against every other design file, and
+against itself for missing or ambiguous behavior. The goal is **maximum coverage of
+identified concerns** — surface anything that could affect the project. It is better
+to surface a question the user dismisses than to miss something that becomes a late
+bug. **You identify concerns; you do not propose solutions at this stage.**
+
+### What to audit (illustrative — not exhaustive, go further)
+
+- **Brief↔design coverage:** Does every user flow / feature in the brief have a
+  corresponding design? Does every design correspond to something in the brief, or
+  is it scope creep?
+- **Design file completeness:** Does each layout have a Route, Elements table,
+  States section, navigation? If any are missing, flag them.
+- **Per-element specification:** For every named element (field, button, link, list,
+  badge, modal, toast), is the behavior, data source, and side-effect fully defined?
+- **Cross-screen consistency:** Are header / footer / nav patterns consistent? Do
+  similar elements behave the same way? Are typography, spacing, and terminology
+  choices coherent across screens?
+- **State coverage:** Empty, loading, error, success, partial-data, unauthorized,
+  offline — defined for each screen where they could occur?
+- **UX flow plausibility:** Can a user reach every screen from a valid entry point
+  and back? Dead-ends, orphans, infinite loops, no recoverable error states?
+- **Auth and authorization:** Which screens require login? Which roles can access?
+  Where does the user land if they fail auth?
+- **Data lifecycle:** For every captured value — where stored, validation, conflict
+  behavior, edit, delete, export, retention. For every displayed value — source,
+  refresh policy, sort/filter/paginate semantics.
+- **Accessibility / responsive concerns:** Anything implying keyboard, screen
+  reader, mobile breakpoint behavior — defined or undefined?
+- **Contradictions:** Anywhere the design says X but the brief says Y, or two
+  designs disagree.
+- **Anything else** — the bullets above are seeds, not a ceiling. Look broadly.
+
+### Output format (present at start of Phase 1)
+
+```
+Design audit — N concerns identified
+─────────────────────────────────────
+Coverage gaps (designs missing for brief features):
+  • <feature from brief> — no design file references it
+
+Per-screen concerns:
+  signup.md
+    • field-org-name has no documented persistence target → impacts brief item "tenant isolation"
+    • no error state defined for duplicate email → impacts brief item "user feedback"
+  dashboard.md
+    • "recent activity" list has no data source or refresh policy → impacts brief item "real-time updates"
+
+Cross-screen / consistency:
+  • Signup uses "Organization", Dashboard sidebar uses "Workspace" — same concept?
+
+Contradictions:
+  • brief.md says "guest checkout supported"; checkout.md has no guest path
+
+Out of scope or scope creep:
+  • settings.md describes admin panel; brief lists admin work as out-of-scope
+```
+
+Omit any category with no entries. If the entire audit finds zero concerns, present:
+
+```
+Design audit — 0 concerns identified
+─────────────────────────────────────
+Design files are internally consistent and aligned with the brief.
+```
+
+### Rules
+
+- **Do not propose solutions.** State the concern and the brief item it impacts.
+  Wait for the user.
+- **No artificial cap.** Surface every concern. Do not hide concerns to keep the
+  list short. The user may dismiss any item.
+- After presenting the audit, proceed to Phase 1's scope-lock questions. Phase 1
+  questions that the design files have already answered should be suppressed (same
+  rule as for the brief).
+- After Phase 1 responses, if the user has answered audit concerns inline, fold
+  those answers into Phase 2 / Phase 3 as confirmed scope. If the user defers a
+  concern, note it but do not block.
+
+---
+
 ## Phase 1 — Scope Lock (2–3 exchanges)
+
+> If design files were loaded, the Active-Analysis Audit Pass runs immediately before these questions.
 
 Ask these three questions in a single message:
 
