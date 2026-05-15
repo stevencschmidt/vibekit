@@ -115,6 +115,26 @@ until grep -qE "QC_COMPLETE|Stopped:|Completed:" state/ralph.log; do sleep 5; do
 - `vibekit.config.sh` stores `BRIEFS_DIR` so the directory can be recovered on session restart
 - On session restart, `/vibeplan` checks `state/ralph.pid` and reconnects to a live Ralph process
 
+### Design files (optional)
+
+A `<brief-dir>/design/` subdirectory may contain any number of `*.md` files
+describing the project's design constraints (architecture, data model, API contracts,
+UX flows, screen layouts, glossary). When present, `/vibeplan` loads them as ambient
+context across every brief and every planning phase and runs an audit pass that
+surfaces concerns (coverage gaps, missing sections, UX inconsistencies, brief
+contradictions, scope creep, ambiguous interactions) before Phase 1's scope-lock
+questions. The audit flags concerns; it does not propose solutions.
+
+Design files are not audited or loaded by QC — verification remains driven by task
+`Verify:` commands and brief success criteria.
+
+Format: plain markdown, optionally with `mermaid` fenced blocks for diagrams and
+ASCII sketches for layouts. Image-only mockups (PNG, Figma exports) are not
+supported. The recommended layout-file template names every interactive element via
+an Elements table so the audit can enumerate fields/buttons/lists and target
+questions per element. See `templates/.claude/skills/vibeplan/SKILL.md` for the full
+templates.
+
 ---
 
 ## Key Boundaries
