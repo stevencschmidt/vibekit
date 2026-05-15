@@ -14,6 +14,17 @@ All notable changes to vibekit are documented here.
 - `knowledge-graph-brief.md` → `docs/design.md`
 - `changes.md` → `CHANGELOG.md`
 - `state/sync.json` reset to blank template
+- `briefs/design/` convention: `/vibeplan` now loads optional design files as ambient
+  context across all modes and runs an active-analysis audit pass before Phase 1
+- Vibeplan audit: surfaces brief↔design coverage gaps, missing sections, cross-screen
+  inconsistencies, brief contradictions, and scope creep — flags concerns without
+  proposing solutions
+- `vibekit.config.sh`: fix stale `BRIEF_FILE` (was `knowledge-graph-brief.md`, now
+  `docs/design.md`)
+- `scripts/qc-prompt.md`: fix stale fallback name (`knowledge-graph-brief.md` →
+  `docs/design.md`)
+- `docs/archive/PLAN.md` removed (superseded by current architecture docs)
+- `ralph.sh`: clean preflight error when `SPEC_TASKS_FILE=""` (no active spec)
 
 ---
 
