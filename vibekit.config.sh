@@ -10,7 +10,7 @@ SESSION_LOG_FILE="$PROJECT_ROOT/state/session-log.json"
 RALPH_PROMPT="$PROJECT_ROOT/scripts/ralph-prompt.md"
 DECISIONS_FILE="$PROJECT_ROOT/state/decisions.md"
 LOG_FILE="$PROJECT_ROOT/state/ralph.log"
-BRIEF_FILE="$PROJECT_ROOT/knowledge-graph-brief.md"
+BRIEF_FILE="$PROJECT_ROOT/docs/design.md"
 QC_PROMPT="$PROJECT_ROOT/scripts/qc-prompt.md"
 
 SPEC_TASKS_FILE="$PROJECT_ROOT/specs/004-design-file-audit/tasks.md"

@@ -1,6 +1,6 @@
 # Tasks: 004-design-file-audit
 
-- [ ] T001 · Cleanup stale references + delete obsolete docs/archive/PLAN.md
+- [x] T001 · Cleanup stale references + delete obsolete docs/archive/PLAN.md
 - [ ] T002 · Audit ralph.sh empty SPEC_TASKS_FILE handling
 - [ ] T003 · Add Design files subsection to docs/claude/architecture.md + manifest tag
 - [ ] T004 · Vibeplan: design-file loading + location rule + recommended templates

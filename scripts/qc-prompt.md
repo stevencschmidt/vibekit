@@ -6,7 +6,7 @@ You are running a QC review after all planned tasks have been completed. Your jo
 
 ## Step 1 — Read the Brief
 
-Read the project brief. Check for `brief.md` at the project root first. If it does not exist, check `vibekit.config.sh` for a `BRIEF_FILE` variable, then fall back to `knowledge-graph-brief.md`. Read whatever file you find completely.
+Read the project brief. Check for `brief.md` at the project root first. If it does not exist, check `vibekit.config.sh` for a `BRIEF_FILE` variable, then fall back to `docs/design.md`. Read whatever file you find completely.
 
 ---
 
