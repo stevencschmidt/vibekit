@@ -27,6 +27,8 @@ When asked to build, fix, investigate, or debug anything non-trivial:
 1. Use `/vibeplan` to generate Ralph tasks (new features) or `/vibeplan <problem description>` (fixes/debugging)
 2. Run `bash scripts/ralph.sh` to execute
 
+**After a usage-limit pause or session restart:** `/resume`
+
 **Exception:** Single-file edits requiring one tool call with no iteration (e.g. fixing a typo, updating a config value).
 
 ---
