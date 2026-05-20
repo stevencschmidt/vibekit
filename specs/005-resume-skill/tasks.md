@@ -2,29 +2,8 @@
 
 - [x] T001 · Write templates/.claude/skills/resume/SKILL.md
 - [x] T002 · Update templates/CLAUDE.md — add /resume to Session Policy
-- [ ] T003 · Update init.sh — copy resume skill during scaffold
+- [x] T003 · Update init.sh — copy resume skill during scaffold
 - [ ] T004 · CHANGELOG entries for spec 005
-
----
-
-## T002 · Update templates/CLAUDE.md — add /resume to Session Policy
-Depends on: T001
-Verify: `grep -q "/resume" templates/CLAUDE.md` exits 0
-Relevant: docs/claude/conventions.md
-
-Read `templates/CLAUDE.md`. Locate the Session Policy section. After the line:
-
-```
-2. Run `bash scripts/ralph.sh` to execute
-```
-
-Add this line immediately after (same indentation level, blank line before it):
-
-```
-**After a usage-limit pause or session restart:** `/resume`
-```
-
-Do not change any other content in the file.
 
 ---
 

@@ -66,6 +66,7 @@ mkdir -p "$TARGET_DIR/specs"
 mkdir -p "$TARGET_DIR/skills"
 mkdir -p "$TARGET_DIR/.claude/skills/vibeplan"
 mkdir -p "$TARGET_DIR/.claude/skills/knowledge-graph-sync"
+mkdir -p "$TARGET_DIR/.claude/skills/resume"
 
 # === 2. Copy scripts/ verbatim ===
 echo "Copying scripts..."
@@ -130,6 +131,8 @@ cp "$VIBEKIT_DIR/templates/.claude/skills/vibeplan/SKILL.md" \
    "$TARGET_DIR/.claude/skills/vibeplan/SKILL.md"
 cp "$VIBEKIT_DIR/templates/.claude/skills/knowledge-graph-sync/SKILL.md" \
    "$TARGET_DIR/.claude/skills/knowledge-graph-sync/SKILL.md"
+cp "$VIBEKIT_DIR/templates/.claude/skills/resume/SKILL.md" \
+   "$TARGET_DIR/.claude/skills/resume/SKILL.md"
 
 # .claude/settings.json — merge if exists, write fresh if not
 if [[ -f "$TARGET_DIR/.claude/settings.json" ]]; then
