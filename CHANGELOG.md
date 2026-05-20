@@ -26,6 +26,13 @@ All notable changes to vibekit are documented here.
 - `docs/archive/PLAN.md` removed (superseded by current architecture docs)
 - `ralph.sh`: clean preflight error when `SPEC_TASKS_FILE=""` (no active spec)
 
+### Added
+- `/resume` skill — resumes a paused session without replanning; checks `state/ralph.pid`, reads `sync.json` + active `tasks.md`, restarts Ralph if tasks remain or guides to `/vibeplan` if complete
+
+### Changed
+- `templates/CLAUDE.md` — Session Policy now references `/resume` for post-pause recovery
+- `init.sh` — scaffolds `resume` skill alongside `vibeplan` and `knowledge-graph-sync`
+
 ---
 
 ## Spec-004 — Pharmai scaffold

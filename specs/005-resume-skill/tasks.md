@@ -3,38 +3,7 @@
 - [x] T001 · Write templates/.claude/skills/resume/SKILL.md
 - [x] T002 · Update templates/CLAUDE.md — add /resume to Session Policy
 - [x] T003 · Update init.sh — copy resume skill during scaffold
-- [ ] T004 · CHANGELOG entries for spec 005
-
----
-
-## T003 · Update init.sh — copy resume skill during scaffold
-Depends on: T002
-Verify: `bash -n init.sh` exits 0
-Relevant: docs/claude/conventions.md
-
-Read `init.sh`. Make exactly two edits:
-
-**Edit 1** — After the line:
-```
-mkdir -p "$TARGET_DIR/.claude/skills/knowledge-graph-sync"
-```
-Add:
-```
-mkdir -p "$TARGET_DIR/.claude/skills/resume"
-```
-
-**Edit 2** — After the block:
-```
-cp "$VIBEKIT_DIR/templates/.claude/skills/knowledge-graph-sync/SKILL.md" \
-   "$TARGET_DIR/.claude/skills/knowledge-graph-sync/SKILL.md"
-```
-Add:
-```
-cp "$VIBEKIT_DIR/templates/.claude/skills/resume/SKILL.md" \
-   "$TARGET_DIR/.claude/skills/resume/SKILL.md"
-```
-
-Verify with `bash -n init.sh` exits 0 before emitting TASK_COMPLETE.
+- [x] T004 · CHANGELOG entries for spec 005
 
 ---
 
