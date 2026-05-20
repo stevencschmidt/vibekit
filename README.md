@@ -139,8 +139,15 @@ Type **yes**. Claude writes all files, commits, and starts Ralph immediately —
 
 ## Execution (Ralph)
 
-Ralph starts automatically when you confirm the plan. If you need to resume after a stop (rate limit, `TASK_BLOCKED`, or manual interrupt), run it yourself:
+Ralph starts automatically when you confirm the plan. If you need to resume after a stop, you have two options:
 
+**From Claude Code** (after a usage-limit pause or session restart):
+```
+/resume
+```
+The `/resume` skill checks whether Ralph is still running, reads current state, and either reconnects to a live Ralph process or restarts it — without replanning.
+
+**From the terminal** (after `TASK_BLOCKED` or manual interrupt):
 ```bash
 bash scripts/ralph.sh --max 50
 ```
@@ -309,6 +316,7 @@ my-project/
     skills/
       vibeplan/SKILL.md      # /vibeplan slash command
       knowledge-graph-sync/SKILL.md  # Background sync (invoked by hooks only)
+      resume/SKILL.md        # /resume — recover from usage-limit pauses without replanning
     settings.json            # autoCompactThreshold: 0.5 + hook config
 ```
 
@@ -370,7 +378,8 @@ Optionally add `skills/<name>/verify.sh` for per-skill post-completion verificat
 2. Open Claude Code in the project directory
 3. /vibeplan brief.md  →  answer 3 rounds  →  yes  →  Ralph starts automatically
 4. Watch progress / tail state/ralph.log
-5. On TASK_BLOCKED: read the reason, fix the task, then resume:
+5. After a usage-limit pause or session restart: /resume
+6. On TASK_BLOCKED: read the reason, fix the task, then resume:
    bash scripts/ralph.sh --task T### --max 50
 ```
 
