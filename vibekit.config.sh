@@ -13,7 +13,7 @@ LOG_FILE="$PROJECT_ROOT/state/ralph.log"
 BRIEF_FILE="$PROJECT_ROOT/docs/design.md"
 QC_PROMPT="$PROJECT_ROOT/scripts/qc-prompt.md"
 
-SPEC_TASKS_FILE="$PROJECT_ROOT/specs/004-design-file-audit/tasks.md"
+SPEC_TASKS_FILE="$PROJECT_ROOT/specs/005-resume-skill/tasks.md"
 
 SKILLS=()
 
