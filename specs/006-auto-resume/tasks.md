@@ -1,42 +1,7 @@
 # Tasks: 006-auto-resume
 
 - [x] T001 · Update vibeplan SKILL.md — stop monitoring on RATE_LIMIT, offer at-command
-- [ ] T002 · Update templates/CLAUDE.md — add Session Start Check section
-
----
-
-## T001 · Update vibeplan SKILL.md — stop monitoring on RATE_LIMIT, offer at-command
-Depends on: —
-Verify: `grep -q "Stop monitoring" templates/.claude/skills/vibeplan/SKILL.md` exits 0
-Relevant: docs/claude/conventions.md, templates/.claude/skills/vibeplan/SKILL.md
-
-Read `templates/.claude/skills/vibeplan/SKILL.md`. Find the "Monitoring Ralph Progress" section
-and locate the event translation table. Find this row:
-
-```
-| `RATE_LIMIT until ...` | "Rate limit hit. Ralph is waiting until `<reset_time>` — will resume automatically." |
-```
-
-Replace it with:
-
-```
-| `RATE_LIMIT until ...` | Stop monitoring immediately. Say: "Rate limit hit. Ralph will resume automatically at `<reset_time>` — no action needed on your end. Stopping chat monitoring now to preserve your remaining quota. Optional: to auto-restart Ralph at the shell if it stops, run `echo 'bash scripts/ralph.sh' \| at HH:MM` (replace HH:MM with the reset time; requires `at` to be installed). When you return after the reset, type `/resume` to check progress." |
-```
-
-Also find the `RATE_LIMIT_RESUMED` row:
-
-```
-| `RATE_LIMIT_RESUMED window=...` | "Rate limit cleared. Ralph resuming..." |
-```
-
-Add a note that this event will not be seen in chat (since monitoring stopped), but it will appear in `state/ralph.log` if the user checks manually:
-
-```
-| `RATE_LIMIT_RESUMED window=...` | (monitoring already stopped — this event appears in `state/ralph.log` only) |
-```
-
-Do not change any other rows in the table or any other section of the file.
-Verify: `grep -q "Stop monitoring" templates/.claude/skills/vibeplan/SKILL.md` exits 0.
+- [x] T002 · Update templates/CLAUDE.md — add Session Start Check section
 
 ---
 

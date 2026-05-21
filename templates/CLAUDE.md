@@ -10,6 +10,21 @@ Before starting any task, read `docs/claude/manifest.json`. Based on the task at
 
 ---
 
+## Session Start Check
+
+At the start of every session, before responding to the user's first message: silently read
+`state/sync.json`. If `ralph.task_id` is non-null, emit this notice on the first line of your
+response:
+
+> ⚡ Active work: `<spec-slug>` · T`<task_id>` — `<task_title>`. Type `/resume` to continue.
+
+The spec-slug comes from `vibekit.config.sh` (`SPEC_TASKS_FILE` path, directory name only).
+If `vibekit.config.sh` is unreadable, use the task_id and task_title from `sync.json` alone.
+
+Then answer the user's question normally. Do not auto-invoke `/resume` — show the notice only.
+
+---
+
 ## Quick Facts
 
 - **Test command:** `<test command>`
