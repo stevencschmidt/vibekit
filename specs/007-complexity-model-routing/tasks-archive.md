@@ -1,0 +1,129 @@
+# Archive: 007-complexity-model-routing
+
+## T001 · Add model-routing config knobs (vibekit.config.sh + template)
+Depends on: —
+Verify: `bash -n vibekit.config.sh && bash -n templates/vibekit.config.sh && grep -q '^MODEL_QC=' vibekit.config.sh && grep -q '^MODEL_AUTO=' vibekit.config.sh && grep -q '^MODEL_COMPLEX=' templates/vibekit.config.sh` exits 0
+Relevant: docs/claude/conventions.md
+Tier: simple
+
+Add five model-routing knobs to BOTH `vibekit.config.sh` and
+`templates/vibekit.config.sh`, immediately after the existing `MODEL=` line. Use
+exactly these names and defaults:
+
+```bash
+# === Complexity-based model routing (spec 007) ===
+MODEL_AUTO="true"                         # "false" → every task uses $MODEL (pre-007 behavior)
+MODEL_SIMPLE="claude-haiku-4-5-20251001"  # tier: simple
+MODEL_MEDIUM="claude-sonnet-4-6"          # tier: medium (also the untagged fallback)
+MODEL_COMPLEX="claude-opus-4-7"           # tier: complex
+MODEL_QC="claude-opus-4-7"                # both QC stages always use this
+```
+
+In `templates/vibekit.config.sh` add the same block (the template uses `#`
+comments around its Tool & Model section — match the surrounding comment style).
+Do not change the existing `MODEL=` line. Do not touch `verify_build()` here.
+
+[TASK_COMPLETE: T001] when both files contain the knobs and pass `bash -n`.
+
+---
+
+## T002 · Add tier_to_model() + escalate_tier() helpers to sync-helpers.sh
+Depends on: T001
+Verify: `bash -c 'set -e; export MODEL_SIMPLE=h MODEL_MEDIUM=s MODEL_COMPLEX=o; source scripts/sync-helpers.sh; [ "$(tier_to_model simple)" = h ]; [ "$(tier_to_model medium)" = s ]; [ "$(tier_to_model complex)" = o ]; [ "$(tier_to_model bogus)" = s ]; [ "$(escalate_tier simple)" = medium ]; [ "$(escalate_tier medium)" = complex ]; [ "$(escalate_tier complex)" = complex ]'` exits 0
+Relevant: docs/claude/conventions.md, docs/claude/architecture.md
+Tier: medium
+
+Add two pure functions to `scripts/sync-helpers.sh` (this file is sourced and
+does NOT use `set -e` at top level — keep that). They must read the `MODEL_*`
+variables from the environment (ralph.sh sources `vibekit.config.sh` before
+sourcing this file, so the vars are present at call time):
+
+```bash
+# tier_to_model <tier> — echo the model id for a complexity tier.
+# Unknown/empty tier → medium (the safe default).
+tier_to_model() {
+  case "$1" in
+    simple)  echo "${MODEL_SIMPLE:-claude-haiku-4-5-20251001}" ;;
+    complex) echo "${MODEL_COMPLEX:-claude-opus-4-7}" ;;
+    *)       echo "${MODEL_MEDIUM:-claude-sonnet-4-6}" ;;
+  esac
+}
+
+# escalate_tier <tier> — echo the next tier up; complex stays complex.
+escalate_tier() {
+  case "$1" in
+    simple) echo "medium" ;;
+    medium) echo "complex" ;;
+    *)      echo "complex" ;;
+  esac
+}
+```
+
+[TASK_COMPLETE: T002] when both functions exist and the Verify command passes.
+
+---
+
+## T003 · ralph.sh: parse Tier → sync.json, resolve per-task execution model
+Depends on: T002
+Verify: `bash -n scripts/ralph.sh && grep -q 'ralph.tier' scripts/ralph.sh && grep -q 'tier_to_model' scripts/ralph.sh && grep -q '_ITER_MODEL' scripts/ralph.sh` exits 0
+Relevant: docs/claude/architecture.md, docs/claude/conventions.md
+Tier: complex
+
+Wire per-task model resolution into `scripts/ralph.sh`. Four edits:
+
+1. **CLI override flag** — where `--model` is parsed (the `--model)` / `--model=*`
+   cases near the top), set `MODEL_OVERRIDE=1`. Initialize `MODEL_OVERRIDE=0`
+   alongside the other CLI defaults.
+
+2. **Extract Tier in the next-task parser** — the Python block that finds the
+   next unchecked task (search for the section body regex `^## ' + re.escape(...)`
+   that currently prints task_id / title / relevant_files). Also parse a
+   `Tier:` line from the task body and print it as a 4th output line. In the
+   bash that reads `_next_result` (the `sed -n '1p'..'3p'` block), read line 4 as
+   `_next_tier` (default `medium` if empty) and `sync_write "ralph.tier"
+   "$_next_tier"` alongside the existing task_id/title/relevant_files writes.
+
+3. **Read tier per iteration** — where `TASK_TITLE=$(sync_read "ralph.task_title")`
+   is read at the top of the loop, also read
+   `TASK_TIER=$(sync_read "ralph.tier" 2>/dev/null || echo "medium")`; treat
+   empty/null as `medium`.
+
+4. **Resolve _ITER_MODEL and use it** — before the main task `claude` call (the
+   `claude --dangerously-skip-permissions --print --model "$MODEL"` for task
+   execution, NOT the QC calls), compute:
+   ```bash
+   if [[ "${MODEL_AUTO:-true}" == "true" && "${MODEL_OVERRIDE:-0}" -eq 0 ]]; then
+     _ITER_MODEL=$(tier_to_model "$TASK_TIER")
+   else
+     _ITER_MODEL="$MODEL"
+   fi
+   ```
+   Pass `--model "$_ITER_MODEL"` in that task call. Add `model=$_ITER_MODEL` to
+   the existing `TASK_START` log line so the chosen model is observable.
+
+Do NOT change the QC `claude` calls in this task (that is T004). Do not change
+escalation yet (that is T005).
+
+[TASK_COMPLETE: T003] when ralph.sh resolves and uses _ITER_MODEL for task
+execution, writes ralph.tier, and passes Verify.
+
+---
+
+## T004 · ralph.sh: pin both QC stages to MODEL_QC
+Depends on: T001
+Verify: `bash -n scripts/ralph.sh && [ "$(grep -c 'MODEL_QC' scripts/ralph.sh)" -ge 2 ]` exits 0
+Relevant: docs/claude/architecture.md
+Tier: medium
+
+In `scripts/ralph.sh`, the two QC `claude` invocations — the final/completion QC
+call and the checkpoint QC call (both currently `claude
+--dangerously-skip-permissions --print --model "$MODEL" "$_QC_RUN_PROMPT"` /
+checkpoint equivalent) — must use `--model "${MODEL_QC:-$MODEL}"` instead of
+`--model "$MODEL"`. This is independent of `MODEL_AUTO` and the `--model` CLI
+override, so QC always runs on the strong model. Change only the QC calls; leave
+the task-execution call (from T003) alone.
+
+[TASK_COMPLETE: T004] when both QC calls use MODEL_QC and Verify passes.
+
+---
+

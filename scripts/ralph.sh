@@ -518,6 +518,8 @@ MAX_QC_ROUNDS=5        # Safety cap — stops runaway QC loops
 TASKS_SINCE_CHECKPOINT=0    # Incremented after each successful safety_commit; reset after checkpoint QC
 CHECKPOINT_QC_ROUND=0       # Counts checkpoint QC rounds for [CKPT-N] log tags
 : "${CHECKPOINT_QC_EVERY:=3}" # Default: fire checkpoint QC every 3 completed tasks; 0 disables
+_PREV_TASK_ID=""   # Tracks task_id to detect task changes; triggers _EFFECTIVE_TIER reset
+_EFFECTIVE_TIER="" # Per-task effective tier; escalates on build-failure retry
 
 while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
   ITERATION=$((ITERATION + 1))
@@ -665,8 +667,14 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
     continue
   fi
 
+  # Reset effective tier when task changes; escalated on build-failure retry
+  if [[ "$TASK_ID" != "$_PREV_TASK_ID" ]]; then
+    _EFFECTIVE_TIER="$TASK_TIER"
+    _PREV_TASK_ID="$TASK_ID"
+  fi
+
   if [[ "${MODEL_AUTO:-true}" == "true" && "${MODEL_OVERRIDE:-0}" -eq 0 ]]; then
-    _ITER_MODEL=$(tier_to_model "$TASK_TIER")
+    _ITER_MODEL=$(tier_to_model "$_EFFECTIVE_TIER")
   else
     _ITER_MODEL="$MODEL"
   fi
@@ -1011,6 +1019,8 @@ print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
           "BUILD_FAIL" "0" "[]" 2>/dev/null || true
         exit 1
       fi
+      _EFFECTIVE_TIER=$(escalate_tier "$_EFFECTIVE_TIER")
+      echo "[$ITERATION] escalated $TASK_ID to tier=$_EFFECTIVE_TIER: $(date)" >> "$LOG_FILE"
       echo "  Retrying ($BUILD_FAIL_COUNT/3 verification attempts)..."
     fi
 

@@ -4,28 +4,10 @@
 - [x] T002 · Add tier_to_model() + escalate_tier() helpers to sync-helpers.sh
 - [x] T003 · ralph.sh: parse Tier → sync.json, resolve per-task execution model
 - [x] T004 · ralph.sh: pin both QC stages to MODEL_QC
-- [ ] T005 · ralph.sh: escalate one tier on build-failure retry
+- [x] T005 · ralph.sh: escalate one tier on build-failure retry
 - [ ] T006 · vibeplan SKILL.md: emit Tier per task + write ralph.tier
 - [ ] T007 · qc-prompt.md: tag QC-appended tasks with a tier
 - [ ] T008 · Docs: CLAUDE.md schema/router + architecture/conventions/manifest
-
----
-
-## T004 · ralph.sh: pin both QC stages to MODEL_QC
-Depends on: T001
-Verify: `bash -n scripts/ralph.sh && [ "$(grep -c 'MODEL_QC' scripts/ralph.sh)" -ge 2 ]` exits 0
-Relevant: docs/claude/architecture.md
-Tier: medium
-
-In `scripts/ralph.sh`, the two QC `claude` invocations — the final/completion QC
-call and the checkpoint QC call (both currently `claude
---dangerously-skip-permissions --print --model "$MODEL" "$_QC_RUN_PROMPT"` /
-checkpoint equivalent) — must use `--model "${MODEL_QC:-$MODEL}"` instead of
-`--model "$MODEL"`. This is independent of `MODEL_AUTO` and the `--model` CLI
-override, so QC always runs on the strong model. Change only the QC calls; leave
-the task-execution call (from T003) alone.
-
-[TASK_COMPLETE: T004] when both QC calls use MODEL_QC and Verify passes.
 
 ---
 
