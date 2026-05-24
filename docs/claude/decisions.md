@@ -1,6 +1,6 @@
 # Decision Log
 
-Total decisions: 007
+Total decisions: 009
 
 Append-only audit log. Each entry has an anchor for precise retrieval.
 
@@ -83,3 +83,13 @@ Append-only audit log. Each entry has an anchor for precise retrieval.
 - Files updated: specs/004-design-file-audit/{spec.md,tasks.md} (new), state/sync.json, vibekit.config.sh; subsequent ralph tasks edit docs/claude/{architecture.md,manifest.json}, templates/.claude/skills/vibeplan/SKILL.md, scripts/qc-prompt.md, CHANGELOG.md.
 - Why: Briefs alone leave gaps on UX and data flow. A `<brief-dir>/design/` directory of markdown files (layouts, data models, API contracts, glossaries) gives `/vibeplan` enough material to interrogate the project before any tasks are written. The audit runs open-endedly — its goal is to surface every concern (coverage gaps, missing sections, cross-screen inconsistencies, brief contradictions, scope creep), not just a fixed checklist. `/vibeplan` identifies; the user decides. Caught issues during the briefing stage are far cheaper than caught issues mid-Ralph.
 - Considered but rejected: per-brief `applies_to:` frontmatter scoping (premature for v1 — ambient is simpler and matches the master `brief.md` pattern); QC reading design files (subjective "design adherence" flags would generate false-positive QC tasks; verify stays driven by task `Verify:` commands); image-only mockups (PNG/Figma — cannot be diffed or reasoned over); a separate `docs/claude/design.md` domain file (the convention is a one-paragraph addition to `architecture.md`, not its own domain).
+
+---
+
+<!-- DECISION:009 | domains: architecture, conventions -->
+## DECISION:009 — Complexity-based per-task model routing for Ralph
+
+- Files updated: specs/007-complexity-model-routing/{spec.md,tasks.md} (new), docs/briefs/007-complexity-model-routing.md (new), state/sync.json, vibekit.config.sh; subsequent ralph tasks edit scripts/{ralph.sh,sync-helpers.sh,qc-prompt.md}, templates/{vibekit.config.sh,.claude/skills/vibeplan/SKILL.md}, CLAUDE.md, docs/claude/{architecture.md,conventions.md,manifest.json}.
+- Why: Ralph ran every task and both QC stages on one static `$MODEL`, so trivial tasks burned the same per-token cost as hard ones. `/vibeplan` (on Opus) tags each task with a complexity tier; Ralph maps tier→model (`simple`/`medium`/`complex` → Haiku/Sonnet/Opus) and escalates one tier on build-failure retry. Both QC stages are pinned to `MODEL_QC` (Opus) since review is where strong judgment pays off. The win is cost/quota efficiency, not token-count reduction. The decisive risk — mis-tagging a hard task as `simple`, which would waste full tokens on failed-then-rolled-back attempts — is covered by the escalation safety net.
+- How it works: tier travels in each `## T###` body as a `Tier:` line (alongside `Relevant:`) and is written to `state/sync.json` as `ralph.tier` by the same next-task parser that writes `task_title`/`relevant_files`. Pure helpers `tier_to_model()`/`escalate_tier()` live in `sync-helpers.sh`. `MODEL_AUTO="false"` or a `--model` CLI flag forces the single-model behavior; neither overrides QC.
+- Considered but rejected: a runtime LLM complexity classifier (adds a round-trip per task and its own rate-limit exposure; the Opus planner already has full context to judge); a pure bash keyword heuristic (crude vs. planner judgment); storing the model id per task instead of a tier name (loses one-line re-point); 2-tier mappings (3 tiers give the widest cost range and a clean one-step escalation path).
