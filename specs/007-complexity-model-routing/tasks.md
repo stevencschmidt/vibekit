@@ -6,34 +6,8 @@
 - [x] T004 · ralph.sh: pin both QC stages to MODEL_QC
 - [x] T005 · ralph.sh: escalate one tier on build-failure retry
 - [x] T006 · vibeplan SKILL.md: emit Tier per task + write ralph.tier
-- [ ] T007 · qc-prompt.md: tag QC-appended tasks with a tier
+- [x] T007 · qc-prompt.md: tag QC-appended tasks with a tier
 - [ ] T008 · Docs: CLAUDE.md schema/router + architecture/conventions/manifest
-
----
-
-## T006 · vibeplan SKILL.md: emit Tier per task + write ralph.tier
-Depends on: T001
-Verify: `grep -q 'Tier:' templates/.claude/skills/vibeplan/SKILL.md && grep -q 'ralph.tier' templates/.claude/skills/vibeplan/SKILL.md` exits 0
-Relevant: docs/claude/conventions.md, docs/claude/architecture.md
-Tier: medium
-
-Update `templates/.claude/skills/vibeplan/SKILL.md` so generated plans carry tier
-tags:
-
-1. In the `tasks.md` task-body template (Step 4, "Write spec files" — the
-   `## T001 · Title` block showing `Depends on:` / `Verify:` / `Relevant:`), add
-   a `Tier: simple | medium | complex` line after `Relevant:`.
-2. Add a short rule near that template: assign each task a tier — `simple` =
-   mechanical/single-file/config; `medium` = standard multi-file feature work;
-   `complex` = core-logic, cross-cutting, or architectural change. Note the tier
-   maps to a model via `MODEL_SIMPLE/MEDIUM/COMPLEX` in `vibekit.config.sh`
-   (Haiku/Sonnet/Opus by default) and that an untagged task falls back to medium.
-3. In Step 5 ("Populate state/sync.json"), also write `ralph.tier` from T001's
-   `Tier:` line (default `"medium"` if absent), alongside task_id/title/
-   relevant_files.
-
-[TASK_COMPLETE: T006] when the SKILL emits Tier lines and writes ralph.tier, and
-Verify passes.
 
 ---
 

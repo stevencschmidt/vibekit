@@ -82,10 +82,13 @@ Do not write any files. Do not commit. Exit cleanly.
    Depends on: —
    Verify: `<deterministic command>` exits 0
    Relevant: docs/claude/<relevant-domain-file>.md
+   Tier: medium
 
    <Description precise enough for Ralph to execute without asking questions.
    Reference specific files, patterns, or conventions. One task = one session.>
    ```
+
+   Set `Tier:` to `simple`, `medium`, or `complex` based on your judgment of implementation complexity. Default to `medium` when unsure. You are running on MODEL_QC (Opus) and can make this judgment as accurately as `/vibeplan`.
 
    Rules for good tasks:
    - Each task has a single verifiable output
@@ -93,7 +96,7 @@ Do not write any files. Do not commit. Exit cleanly.
    - No implicit dependencies on uncommitted work
    - Description includes enough context that Ralph never needs to ask a question
 
-4. **Update `state/sync.json`**: write the first new task ID into `ralph.task_id`, the task title into `ralph.task_title`, and the files from its `Relevant:` line into `ralph.relevant_files`.
+4. **Update `state/sync.json`**: write the first new task ID into `ralph.task_id`, the task title into `ralph.task_title`, the files from its `Relevant:` line into `ralph.relevant_files`, and the task's `Tier:` value into `ralph.tier`.
 
 5. **Commit** the updated `tasks.md` and `state/sync.json`:
    ```
