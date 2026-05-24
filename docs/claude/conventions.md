@@ -51,6 +51,22 @@ The QC agent emits `[QC_COMPLETE]` (standalone, no T-id) when no gaps remain aga
 
 If no plausible verify exists, `/vibeplan` must ask the user rather than write `return 0`.
 
+## Model Routing / Tier Convention
+
+Tasks carry an optional `Tier:` field (`simple`, `medium`, `complex`). When `MODEL_AUTO=true` (the default) and no `--model` flag is passed, Ralph resolves the execution model from the tier:
+
+| Tier | Default model | Use for |
+|------|--------------|---------|
+| `simple` | `MODEL_SIMPLE` | mechanical changes, doc edits, single-file tweaks |
+| `medium` | `MODEL_MEDIUM` | standard feature work (untagged tasks default here) |
+| `complex` | `MODEL_COMPLEX` | multi-file refactors, architecture changes |
+
+- **Untagged tasks** are treated as `medium`.
+- **Build-failure retries** escalate one tier (simple→medium→complex) before each retry attempt.
+- **Both QC stages** (checkpoint and completion) always run on `MODEL_QC`, regardless of task tier.
+- **`MODEL_AUTO=false`** or passing `--model` on the CLI bypasses routing and runs every task on `$MODEL`.
+- `/vibeplan` writes a `Tier:` line per task and writes `ralph.tier` in `state/sync.json`; QC-appended tasks also carry a tier.
+
 ## Structured Delta Obligation (Sync Agent)
 
 The sync agent's `Step 1.5` runs before free-form signal sniffing:

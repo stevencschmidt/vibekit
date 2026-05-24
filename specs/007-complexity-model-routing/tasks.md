@@ -7,25 +7,7 @@
 - [x] T005 · ralph.sh: escalate one tier on build-failure retry
 - [x] T006 · vibeplan SKILL.md: emit Tier per task + write ralph.tier
 - [x] T007 · qc-prompt.md: tag QC-appended tasks with a tier
-- [ ] T008 · Docs: CLAUDE.md schema/router + architecture/conventions/manifest
-
----
-
-## T007 · qc-prompt.md: tag QC-appended tasks with a tier
-Depends on: T006
-Verify: `grep -qi 'tier' scripts/qc-prompt.md` exits 0
-Relevant: docs/claude/conventions.md, docs/claude/architecture.md
-Tier: simple
-
-In `scripts/qc-prompt.md`, where the QC agent is instructed to append new
-`## T###` task bodies to `tasks.md` and update `state/sync.json`, add an
-instruction to include a `Tier:` line on each appended task (same convention as
-`/vibeplan`: simple/medium/complex; default `medium` when unsure) and to write
-`ralph.tier` when it sets the next `ralph.task_id`. The QC agent runs on
-`MODEL_QC` (Opus), so it can judge tier as well as `/vibeplan`.
-
-[TASK_COMPLETE: T007] when qc-prompt.md instructs tier tagging on appended tasks
-and Verify passes.
+- [x] T008 · Docs: CLAUDE.md schema/router + architecture/conventions/manifest
 
 ---
 

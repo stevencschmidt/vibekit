@@ -2,13 +2,13 @@
   "files": [
     {
       "path": "docs/claude/architecture.md",
-      "summary": "Three-pillar architecture (Knowledge Graph, /vibeplan, Ralph), component map, per-iteration flow, tasks/brief archive split, sync-agent mode dispatch, and key boundaries.",
-      "tags": ["architecture", "pillars", "components", "ralph", "sync-agent", "qc", "manifest", "boundaries", "archive", "brief", "design"]
+      "summary": "Three-pillar architecture (Knowledge Graph, /vibeplan, Ralph), component map, per-iteration flow with model routing from task tier and QC pinned to MODEL_QC, tasks/brief archive split, sync-agent mode dispatch, and key boundaries.",
+      "tags": ["architecture", "pillars", "components", "ralph", "sync-agent", "qc", "manifest", "boundaries", "archive", "brief", "design", "model-routing", "tier"]
     },
     {
       "path": "docs/claude/conventions.md",
-      "summary": "Script style, commit prefixes, sentinel protocol, skill format, verify_build() stack-awareness, structured delta obligation, archive file naming, sync hook arg convention, session policy.",
-      "tags": ["conventions", "commit-prefixes", "sentinels", "verify-build", "skill-format", "session-policy", "structured-delta", "archive", "sync-hook"]
+      "summary": "Script style, commit prefixes, sentinel protocol, skill format, verify_build() stack-awareness, model routing/tier convention (tier→model mapping, escalation, QC pinning), structured delta obligation, archive file naming, sync hook arg convention, session policy.",
+      "tags": ["conventions", "commit-prefixes", "sentinels", "verify-build", "skill-format", "session-policy", "structured-delta", "archive", "sync-hook", "model-routing", "tier"]
     },
     {
       "path": "docs/claude/stack.md",

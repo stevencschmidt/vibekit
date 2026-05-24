@@ -39,12 +39,13 @@ When asked to build, fix, investigate, or debug anything non-trivial:
 - **Checkpoint QC:** `CHECKPOINT_QC_EVERY=N bash scripts/ralph.sh` (default 3; set `0` to disable)
 - **Scaffold a project:** `./init.sh <target-dir> [project-name]`
 - **No build step, no package manager** — bash + python3 + claude CLI
+- **MODEL_AUTO:** `true` routes each task to the model matching its tier; `false` or `--model` flag uses `$MODEL` for all tasks
 
 ---
 
 ## Decision Log
 
-Total decisions: 008
+Total decisions: 009
 
 Read the last 5 entries from `docs/claude/decisions.md` when making architectural choices.
 
@@ -71,8 +72,9 @@ The execution loop. Per iteration:
 1. Sources `vibekit.config.sh` (project-specific config + `verify_build()`) and `scripts/sync-helpers.sh` + `scripts/monitor.sh`
 2. Reads `ralph.task_id` from `state/sync.json`
 3. Builds a prompt from `scripts/ralph-prompt.md` (substituting `{{SKILLS_CONTEXT}}` with loaded skill manifests)
-4. Runs `claude --dangerously-skip-permissions --print --model $MODEL "Read <prompt> and execute the task in state/sync.json"`
-5. Detects sentinels in output, runs `verify_build()` on TASK_COMPLETE, rolls back via `git reset --hard` on failure
+4. Resolves the per-task model from the task's `tier` field (`MODEL_SIMPLE`/`MODEL_MEDIUM`/`MODEL_COMPLEX`); `MODEL_AUTO=false` or `--model` bypasses routing and uses `$MODEL` directly; both QC stages always run on `MODEL_QC`
+5. Runs `claude --dangerously-skip-permissions --print --model $MODEL "Read <prompt> and execute the task in state/sync.json"`
+6. Detects sentinels in output, runs `verify_build()` on TASK_COMPLETE, rolls back via `git reset --hard` on failure
 
 Separate stall and build-failure counters per task; 3-strike limit on each. Rate limits trigger a live countdown sleep (not a stall). SIGINT rolls back the current iteration.
 
@@ -108,6 +110,11 @@ What ralph.sh sources from project root:
 ```bash
 TOOL="claude"           # claude | amp
 MODEL="claude-sonnet-4-6"
+MODEL_AUTO=true                            # resolve model from tier; false → always $MODEL
+MODEL_SIMPLE="claude-haiku-4-5-20251001"   # tier: simple
+MODEL_MEDIUM="claude-sonnet-4-6"           # tier: medium (untagged tasks default here)
+MODEL_COMPLEX="claude-opus-4-7"            # tier: complex
+MODEL_QC="claude-opus-4-7"                 # both QC stages always use this
 SYNC_FILE="$PROJECT_ROOT/state/sync.json"
 SESSION_LOG_FILE="$PROJECT_ROOT/state/session-log.json"
 RALPH_PROMPT="$PROJECT_ROOT/scripts/ralph-prompt.md"
@@ -127,6 +134,7 @@ verify_build() { return 0; }  # project-specific
     "task_id": null,
     "task_title": "",
     "relevant_files": [],
+    "tier": "medium",
     "last_sentinel": null,
     "last_updated": null,
     "session": 1

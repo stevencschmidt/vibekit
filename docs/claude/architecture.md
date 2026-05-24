@@ -23,10 +23,11 @@ Autonomous execution loop. Per iteration:
 1. Sources `vibekit.config.sh` + `scripts/sync-helpers.sh` + `scripts/monitor.sh`
 2. Reads `ralph.task_id` from `state/sync.json`
 3. Substitutes `{{SKILLS_CONTEXT}}` in `scripts/ralph-prompt.md` with loaded skill manifests
-4. Runs `claude --dangerously-skip-permissions --print --model $MODEL`
-5. Detects sentinels in output, runs `verify_build()` on TASK_COMPLETE, rolls back on failure
-6. After a successful task, increments `TASKS_SINCE_CHECKPOINT`; fires a checkpoint QC round if `>= CHECKPOINT_QC_EVERY` (default 3) AND ≥2 unchecked tasks remain
-7. When all tasks are `[x]`, fires completion QC; exits on `[QC_COMPLETE]`
+4. Resolves the per-iteration model from the task's `tier` field (`MODEL_SIMPLE`/`MODEL_MEDIUM`/`MODEL_COMPLEX`); build-failure retries escalate one tier; `MODEL_AUTO=false` or `--model` flag uses `$MODEL` for all tasks; both QC stages always run on `MODEL_QC`
+5. Runs `claude --dangerously-skip-permissions --print --model $_ITER_MODEL`
+6. Detects sentinels in output, runs `verify_build()` on TASK_COMPLETE, rolls back on failure
+7. After a successful task, increments `TASKS_SINCE_CHECKPOINT`; fires a checkpoint QC round if `>= CHECKPOINT_QC_EVERY` (default 3) AND ≥2 unchecked tasks remain
+8. When all tasks are `[x]`, fires completion QC; exits on `[QC_COMPLETE]`
 
 Empty `SPEC_TASKS_FILE` in `vibekit.config.sh` produces a clean preflight error (exit 2) with guidance to run `/vibeplan`; this check fires after the preflight summary and before any task execution or `--dry-run` exit.
 
