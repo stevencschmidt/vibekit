@@ -255,6 +255,7 @@ is_rate_limited_output() {
   tail_output=$(echo "$output" | tail -n 20)
   if echo "$tail_output" | grep -qi "rate limit";        then return 0; fi
   if echo "$tail_output" | grep -qi "usage limit";       then return 0; fi
+  if echo "$tail_output" | grep -qi "session limit";     then return 0; fi
   if echo "$tail_output" | grep -qi "too many requests"; then return 0; fi
   if echo "$tail_output" | grep -qi "exceeded.*quota";   then return 0; fi
   if echo "$tail_output" | grep -qi "5-hour limit";      then return 0; fi
@@ -386,7 +387,7 @@ notify_exit() {
   command -v notify-send >/dev/null 2>&1 && \
     notify-send "vibekit/$event" "$summary" 2>/dev/null || true
   rm -f "${SYNC_FILE%/*}/ralph.pid" 2>/dev/null || true
-  printf '\a' > /dev/tty 2>/dev/null || true
+  { printf '\a' > /dev/tty; } 2>/dev/null || true
 }
 
 # === Effective Prompt (with SKILLS_CONTEXT substituted) ===

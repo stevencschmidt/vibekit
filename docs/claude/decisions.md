@@ -1,6 +1,6 @@
 # Decision Log
 
-Total decisions: 009
+Total decisions: 010
 
 Append-only audit log. Each entry has an anchor for precise retrieval.
 
@@ -93,3 +93,14 @@ Append-only audit log. Each entry has an anchor for precise retrieval.
 - Why: Ralph ran every task and both QC stages on one static `$MODEL`, so trivial tasks burned the same per-token cost as hard ones. `/vibeplan` (on Opus) tags each task with a complexity tier; Ralph maps tier→model (`simple`/`medium`/`complex` → Haiku/Sonnet/Opus) and escalates one tier on build-failure retry. Both QC stages are pinned to `MODEL_QC` (Opus) since review is where strong judgment pays off. The win is cost/quota efficiency, not token-count reduction. The decisive risk — mis-tagging a hard task as `simple`, which would waste full tokens on failed-then-rolled-back attempts — is covered by the escalation safety net.
 - How it works: tier travels in each `## T###` body as a `Tier:` line (alongside `Relevant:`) and is written to `state/sync.json` as `ralph.tier` by the same next-task parser that writes `task_title`/`relevant_files`. Pure helpers `tier_to_model()`/`escalate_tier()` live in `sync-helpers.sh`. `MODEL_AUTO="false"` or a `--model` CLI flag forces the single-model behavior; neither overrides QC.
 - Considered but rejected: a runtime LLM complexity classifier (adds a round-trip per task and its own rate-limit exposure; the Opus planner already has full context to judge); a pure bash keyword heuristic (crude vs. planner judgment); storing the model id per task instead of a tier name (loses one-line re-point); 2-tier mappings (3 tiers give the widest cost range and a clean one-step escalation path).
+
+---
+
+<!-- DECISION:010 | domains: conventions, architecture -->
+## DECISION:010 — Dogfooding fixes: rate-limit detection + /dev/tty guard (spec 007 fallout)
+
+- Files updated: scripts/ralph.sh
+- Why: Two latent bugs surfaced during spec 007's autonomous run. (1) `is_rate_limited_output` did not recognize the Claude CLI message "You've hit your session limit · resets <time>" — none of its patterns matched "session limit" — so when the limit hit mid–final-QC, ralph treated the empty QC output as a `QC_STALL` and exited 1 instead of waiting for reset. (2) `notify_exit` rang the terminal bell via `printf '\a' > /dev/tty`; when ralph runs detached (nohup, no controlling terminal) bash's redirection-open failure ("/dev/tty: No such device or address") leaked to the log — `2>/dev/null` on the simple command does not suppress bash's redirect-setup error, and `[ -w /dev/tty ]` is not a valid guard (the device node is writable by mode even when `open()` fails with ENXIO).
+- Fixes: added a "session limit" pattern to `is_rate_limited_output`; wrapped the bell in a brace group `{ printf '\a' > /dev/tty; } 2>/dev/null || true` so the redirect-open error is captured while the bell still rings whenever a controlling terminal exists. Verified with a detached-session (`setsid`, stdout/stderr→file) reproduction.
+- Fixed inline (single-file, no-iteration edits) per the session-policy exception, following the DECISION:006 precedent for ralph.sh runtime fixes.
+- Considered but rejected: routing through `/vibeplan` → Ralph (overhead for two one-liners, and fixing the rate-limit detector via an autonomous run that itself depends on that detector is circular); `[ -t 1 ]` gate for the bell (skips the bell on any stdout redirect even when a controlling tty exists).
