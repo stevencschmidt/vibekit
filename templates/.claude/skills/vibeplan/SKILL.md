@@ -530,6 +530,7 @@ Create `specs/NNN-slug/tasks.md` with a checkbox list at the top followed by det
 Depends on: —
 Verify: `<command>` exits 0
 Relevant: docs/claude/conventions.md
+Tier: simple | medium | complex
 
 Description precise enough for Ralph to start without asking. Reference specific files,
 patterns, and conventions by name. One task = one completable session (~100K token budget).
@@ -540,6 +541,7 @@ patterns, and conventions by name. One task = one completable session (~100K tok
 Depends on: T001
 Verify: `<command>` exits 0
 Relevant: docs/claude/conventions.md
+Tier: simple | medium | complex
 
 Description...
 ```
@@ -554,9 +556,16 @@ Rules for good tasks:
 - `Verify:` is a deterministic command (not "check that it looks right")
 - Description includes enough context that Ralph never needs to ask a question
 
+Assign each task a tier:
+- `simple` — mechanical/single-file/config change (e.g. add a flag, update a template)
+- `medium` — standard multi-file feature work (default when unsure)
+- `complex` — core-logic, cross-cutting, or architectural change
+
+The tier maps to a model via `MODEL_SIMPLE/MEDIUM/COMPLEX` in `vibekit.config.sh` (Haiku/Sonnet/Opus by default). An untagged task falls back to `medium`.
+
 ### 5. Populate state/sync.json
 
-Write `T001` into `ralph.task_id`, the task title into `ralph.task_title`, and the files from T001's `Relevant:` line into `ralph.relevant_files`:
+Write `T001` into `ralph.task_id`, the task title into `ralph.task_title`, the files from T001's `Relevant:` line into `ralph.relevant_files`, and T001's `Tier:` value into `ralph.tier`:
 
 ```json
 {
@@ -564,12 +573,13 @@ Write `T001` into `ralph.task_id`, the task title into `ralph.task_title`, and t
     "task_id": "T001",
     "task_title": "<title of T001>",
     "relevant_files": ["docs/claude/architecture.md", "docs/claude/conventions.md"],
+    "tier": "medium",
     ...
   }
 }
 ```
 
-If T001 has no `Relevant:` line, write an empty array.
+If T001 has no `Relevant:` line, write an empty array. If T001 has no `Tier:` line, write `"medium"` as the default.
 
 ### 6. Update brief.md (or sub-brief if multi-brief project)
 

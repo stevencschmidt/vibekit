@@ -5,37 +5,9 @@
 - [x] T003 · ralph.sh: parse Tier → sync.json, resolve per-task execution model
 - [x] T004 · ralph.sh: pin both QC stages to MODEL_QC
 - [x] T005 · ralph.sh: escalate one tier on build-failure retry
-- [ ] T006 · vibeplan SKILL.md: emit Tier per task + write ralph.tier
+- [x] T006 · vibeplan SKILL.md: emit Tier per task + write ralph.tier
 - [ ] T007 · qc-prompt.md: tag QC-appended tasks with a tier
 - [ ] T008 · Docs: CLAUDE.md schema/router + architecture/conventions/manifest
-
----
-
-## T005 · ralph.sh: escalate one tier on build-failure retry
-Depends on: T003
-Verify: `bash -n scripts/ralph.sh && grep -q 'escalate_tier' scripts/ralph.sh` exits 0
-Relevant: docs/claude/architecture.md, docs/claude/conventions.md
-Tier: complex
-
-Add tier escalation on build-failure retry in `scripts/ralph.sh`. The existing
-flow: on TASK_COMPLETE, `verify_build()` runs; on failure it `git reset --hard`s,
-increments the per-task build-failure counter, and retries the SAME task.
-
-- Maintain an effective tier per task: when the loop starts a task (task_id
-  differs from the previously seen one), set `_EFFECTIVE_TIER="$TASK_TIER"`.
-- On a build-failure retry (the path that rolls back and loops to retry the same
-  task), set `_EFFECTIVE_TIER=$(escalate_tier "$_EFFECTIVE_TIER")` and log it
-  (e.g. `escalated $TASK_ID to tier=$_EFFECTIVE_TIER`).
-- Change the `_ITER_MODEL` resolution from T003 to use `$_EFFECTIVE_TIER`
-  instead of `$TASK_TIER` (still gated on `MODEL_AUTO` true and no `--model`
-  override).
-
-Reset is automatic via the task-changed check. `complex` escalates to `complex`
-(no-op), so a complex task that keeps failing still hits the existing 3-strike
-build-failure limit unchanged.
-
-[TASK_COMPLETE: T005] when escalation adjusts the model on retry and Verify
-passes.
 
 ---
 
