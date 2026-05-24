@@ -346,3 +346,31 @@ PYEOF
         return 1
     fi
 }
+
+# ---------------------------------------------------------------------------
+# tier_to_model <tier>
+#
+# Echo the model ID for a complexity tier.
+# Unknown/empty tier → medium (the safe default).
+# Reads MODEL_SIMPLE/MEDIUM/COMPLEX from the environment (set via vibekit.config.sh).
+# ---------------------------------------------------------------------------
+tier_to_model() {
+  case "$1" in
+    simple)  echo "${MODEL_SIMPLE:-claude-haiku-4-5-20251001}" ;;
+    complex) echo "${MODEL_COMPLEX:-claude-opus-4-7}" ;;
+    *)       echo "${MODEL_MEDIUM:-claude-sonnet-4-6}" ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+# escalate_tier <tier>
+#
+# Echo the next tier up; complex stays complex.
+# ---------------------------------------------------------------------------
+escalate_tier() {
+  case "$1" in
+    simple) echo "medium" ;;
+    medium) echo "complex" ;;
+    *)      echo "complex" ;;
+  esac
+}

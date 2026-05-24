@@ -1,40 +1,13 @@
 # Tasks: 007-complexity-model-routing
 
 - [x] T001 · Add model-routing config knobs (vibekit.config.sh + template)
-- [ ] T002 · Add tier_to_model() + escalate_tier() helpers to sync-helpers.sh
+- [x] T002 · Add tier_to_model() + escalate_tier() helpers to sync-helpers.sh
 - [ ] T003 · ralph.sh: parse Tier → sync.json, resolve per-task execution model
 - [ ] T004 · ralph.sh: pin both QC stages to MODEL_QC
 - [ ] T005 · ralph.sh: escalate one tier on build-failure retry
 - [ ] T006 · vibeplan SKILL.md: emit Tier per task + write ralph.tier
 - [ ] T007 · qc-prompt.md: tag QC-appended tasks with a tier
 - [ ] T008 · Docs: CLAUDE.md schema/router + architecture/conventions/manifest
-
----
-
-## T001 · Add model-routing config knobs (vibekit.config.sh + template)
-Depends on: —
-Verify: `bash -n vibekit.config.sh && bash -n templates/vibekit.config.sh && grep -q '^MODEL_QC=' vibekit.config.sh && grep -q '^MODEL_AUTO=' vibekit.config.sh && grep -q '^MODEL_COMPLEX=' templates/vibekit.config.sh` exits 0
-Relevant: docs/claude/conventions.md
-Tier: simple
-
-Add five model-routing knobs to BOTH `vibekit.config.sh` and
-`templates/vibekit.config.sh`, immediately after the existing `MODEL=` line. Use
-exactly these names and defaults:
-
-```bash
-# === Complexity-based model routing (spec 007) ===
-MODEL_AUTO="true"                         # "false" → every task uses $MODEL (pre-007 behavior)
-MODEL_SIMPLE="claude-haiku-4-5-20251001"  # tier: simple
-MODEL_MEDIUM="claude-sonnet-4-6"          # tier: medium (also the untagged fallback)
-MODEL_COMPLEX="claude-opus-4-7"           # tier: complex
-MODEL_QC="claude-opus-4-7"                # both QC stages always use this
-```
-
-In `templates/vibekit.config.sh` add the same block (the template uses `#`
-comments around its Tool & Model section — match the surrounding comment style).
-Do not change the existing `MODEL=` line. Do not touch `verify_build()` here.
-
-[TASK_COMPLETE: T001] when both files contain the knobs and pass `bash -n`.
 
 ---
 
