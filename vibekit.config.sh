@@ -10,10 +10,10 @@ SESSION_LOG_FILE="$PROJECT_ROOT/state/session-log.json"
 RALPH_PROMPT="$PROJECT_ROOT/scripts/ralph-prompt.md"
 DECISIONS_FILE="$PROJECT_ROOT/state/decisions.md"
 LOG_FILE="$PROJECT_ROOT/state/ralph.log"
-BRIEF_FILE="$PROJECT_ROOT/docs/design.md"
+BRIEF_FILE="$PROJECT_ROOT/docs/briefs/007-complexity-model-routing.md"
 QC_PROMPT="$PROJECT_ROOT/scripts/qc-prompt.md"
 
-SPEC_TASKS_FILE="$PROJECT_ROOT/specs/006-auto-resume/tasks.md"
+SPEC_TASKS_FILE="$PROJECT_ROOT/specs/007-complexity-model-routing/tasks.md"
 
 SKILLS=()
 
@@ -21,7 +21,7 @@ SKILLS=()
 # in the self-modifying framework before it commits.
 verify_build() {
   # Bash syntax for all scripts
-  for f in scripts/ralph.sh scripts/sync-agent.sh scripts/sync-helpers.sh scripts/monitor.sh; do
+  for f in scripts/ralph.sh scripts/sync-agent.sh scripts/sync-helpers.sh scripts/monitor.sh vibekit.config.sh templates/vibekit.config.sh; do
     if [[ -f "$f" ]]; then
       bash -n "$f" || { echo "verify_build: syntax error in $f" >&2; return 1; }
     fi
