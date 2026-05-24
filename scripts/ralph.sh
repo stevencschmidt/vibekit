@@ -575,7 +575,7 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
     _TMPOUT=$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ralph_qc_$$")
     if [[ "$TOOL" == "claude" ]]; then
       claude --dangerously-skip-permissions --print \
-        --model "$MODEL" \
+        --model "${MODEL_QC:-$MODEL}" \
         "$_QC_RUN_PROMPT" \
         2>&1 | tee "$_TMPOUT" || true
     else
@@ -934,7 +934,7 @@ print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
             _TMPOUT=$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ralph_ckpt_$$")
             if [[ "$TOOL" == "claude" ]]; then
               claude --dangerously-skip-permissions --print \
-                --model "$MODEL" "$_CKPT_RUN_PROMPT" \
+                --model "${MODEL_QC:-$MODEL}" "$_CKPT_RUN_PROMPT" \
                 2>&1 | tee "$_TMPOUT" || true
             else
               echo "$_CKPT_RUN_PROMPT" \
