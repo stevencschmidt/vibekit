@@ -1,6 +1,6 @@
 # Tasks: 007-complexity-model-routing
 
-- [ ] T001 · Add model-routing config knobs (vibekit.config.sh + template)
+- [x] T001 · Add model-routing config knobs (vibekit.config.sh + template)
 - [ ] T002 · Add tier_to_model() + escalate_tier() helpers to sync-helpers.sh
 - [ ] T003 · ralph.sh: parse Tier → sync.json, resolve per-task execution model
 - [ ] T004 · ralph.sh: pin both QC stages to MODEL_QC
