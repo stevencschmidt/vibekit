@@ -14,9 +14,16 @@ Before starting any task, read `docs/claude/manifest.json`. Based on the task at
 
 This repo contains **vibekit source only**. Do not create phramewerks-specific files here.
 
+> **FIREWALL — never run git in phramewerks from this project.** From a vibekit
+> session you may **copy/edit files** into `/home/steven/phramewerks` (via
+> `push-to-phramewerks.sh` or direct edits to sync config), but you must **never**
+> run any git operation there — no `git add`, `commit`, `push`, `branch`, `reset`,
+> or staging. All phramewerks commits happen in a phramewerks session. Do not offer
+> to commit in phramewerks. The two projects' git histories stay independent.
+
 - **phramewerks** (test project using vibekit) lives at `/home/steven/phramewerks`
 - Bugs are identified while building phramewerks, fixed here in vibekit, then synced back
-- After fixing any vibekit file, run `bash scripts/push-to-phramewerks.sh` to push changes
+- After fixing any vibekit file, run `bash scripts/push-to-phramewerks.sh` to push changes (file sync only — never commit in phramewerks)
 - When adding new infrastructure files to `init.sh`, add them to `push-to-phramewerks.sh` too
 
 ---
