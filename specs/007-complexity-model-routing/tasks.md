@@ -2,48 +2,12 @@
 
 - [x] T001 · Add model-routing config knobs (vibekit.config.sh + template)
 - [x] T002 · Add tier_to_model() + escalate_tier() helpers to sync-helpers.sh
-- [ ] T003 · ralph.sh: parse Tier → sync.json, resolve per-task execution model
+- [x] T003 · ralph.sh: parse Tier → sync.json, resolve per-task execution model
 - [ ] T004 · ralph.sh: pin both QC stages to MODEL_QC
 - [ ] T005 · ralph.sh: escalate one tier on build-failure retry
 - [ ] T006 · vibeplan SKILL.md: emit Tier per task + write ralph.tier
 - [ ] T007 · qc-prompt.md: tag QC-appended tasks with a tier
 - [ ] T008 · Docs: CLAUDE.md schema/router + architecture/conventions/manifest
-
----
-
-## T002 · Add tier_to_model() + escalate_tier() helpers to sync-helpers.sh
-Depends on: T001
-Verify: `bash -c 'set -e; export MODEL_SIMPLE=h MODEL_MEDIUM=s MODEL_COMPLEX=o; source scripts/sync-helpers.sh; [ "$(tier_to_model simple)" = h ]; [ "$(tier_to_model medium)" = s ]; [ "$(tier_to_model complex)" = o ]; [ "$(tier_to_model bogus)" = s ]; [ "$(escalate_tier simple)" = medium ]; [ "$(escalate_tier medium)" = complex ]; [ "$(escalate_tier complex)" = complex ]'` exits 0
-Relevant: docs/claude/conventions.md, docs/claude/architecture.md
-Tier: medium
-
-Add two pure functions to `scripts/sync-helpers.sh` (this file is sourced and
-does NOT use `set -e` at top level — keep that). They must read the `MODEL_*`
-variables from the environment (ralph.sh sources `vibekit.config.sh` before
-sourcing this file, so the vars are present at call time):
-
-```bash
-# tier_to_model <tier> — echo the model id for a complexity tier.
-# Unknown/empty tier → medium (the safe default).
-tier_to_model() {
-  case "$1" in
-    simple)  echo "${MODEL_SIMPLE:-claude-haiku-4-5-20251001}" ;;
-    complex) echo "${MODEL_COMPLEX:-claude-opus-4-7}" ;;
-    *)       echo "${MODEL_MEDIUM:-claude-sonnet-4-6}" ;;
-  esac
-}
-
-# escalate_tier <tier> — echo the next tier up; complex stays complex.
-escalate_tier() {
-  case "$1" in
-    simple) echo "medium" ;;
-    medium) echo "complex" ;;
-    *)      echo "complex" ;;
-  esac
-}
-```
-
-[TASK_COMPLETE: T002] when both functions exist and the Verify command passes.
 
 ---
 

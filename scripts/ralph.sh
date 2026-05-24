@@ -85,13 +85,14 @@ MAX_ITERATIONS=50
 DRY_RUN=false
 RESUME_TASK=""
 SKIP_QC=false
+MODEL_OVERRIDE=0
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     --tool)      TOOL="$2";               shift 2 ;;
     --tool=*)    TOOL="${1#*=}";          shift   ;;
-    --model)     MODEL="$2";              shift 2 ;;
-    --model=*)   MODEL="${1#*=}";         shift   ;;
+    --model)     MODEL="$2"; MODEL_OVERRIDE=1;              shift 2 ;;
+    --model=*)   MODEL="${1#*=}"; MODEL_OVERRIDE=1;         shift   ;;
     --max)       MAX_ITERATIONS="$2";     shift 2 ;;
     --max=*)     MAX_ITERATIONS="${1#*=}"; shift  ;;
     --task)      RESUME_TASK="$2";        shift 2 ;;
@@ -523,6 +524,8 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
 
   TASK_ID=$(sync_read "ralph.task_id" 2>/dev/null || echo "")
   TASK_TITLE=$(sync_read "ralph.task_title" 2>/dev/null || echo "")
+  TASK_TIER=$(sync_read "ralph.tier" 2>/dev/null || echo "medium")
+  [[ -z "$TASK_TIER" || "$TASK_TIER" == "null" ]] && TASK_TIER="medium"
 
   if [[ -z "$TASK_ID" || "$TASK_ID" == "null" ]]; then
     # All scheduled tasks complete — enter QC loop if enabled
@@ -662,8 +665,14 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
     continue
   fi
 
+  if [[ "${MODEL_AUTO:-true}" == "true" && "${MODEL_OVERRIDE:-0}" -eq 0 ]]; then
+    _ITER_MODEL=$(tier_to_model "$TASK_TIER")
+  else
+    _ITER_MODEL="$MODEL"
+  fi
+
   echo "[$ITERATION] Starting $TASK_ID: $(date)" >> "$LOG_FILE"
-  echo "[$ITERATION] TASK_START task=$TASK_ID title=${TASK_TITLE:-}: $(date)" >> "$LOG_FILE"
+  echo "[$ITERATION] TASK_START task=$TASK_ID title=${TASK_TITLE:-} model=$_ITER_MODEL: $(date)" >> "$LOG_FILE"
 
   # Save HEAD SHA for rollback
   PRE_SHA=$(git -C "$PROJECT_ROOT" rev-parse HEAD)
@@ -698,7 +707,7 @@ except Exception: pass
   _TMPOUT=$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ralph_out_$$")
   if [[ "$TOOL" == "claude" ]]; then
     claude --dangerously-skip-permissions --print \
-      --model "$MODEL" \
+      --model "$_ITER_MODEL" \
       "$_TASK_PROMPT" \
       2>&1 | tee "$_TMPOUT" || true
   else
@@ -849,23 +858,30 @@ m = re.search(r'^- \[ \] (T[0-9]+)(.*)', content, re.MULTILINE)
 if m:
     task_id = m.group(1)
     title = m.group(2).strip().lstrip('\u00b7\u2014- ').strip()
-    # Find that task's ## section and extract its Relevant: line
+    # Find that task's ## section and extract its Relevant: and Tier: lines
     sec = re.search(r'^## ' + re.escape(task_id) + r'\b[^\n]*\n(.*?)(?=^## T|\Z)',
                     content, re.MULTILINE | re.DOTALL)
     relevant = []
+    tier = 'medium'
     if sec:
         rel = re.search(r'^Relevant:\s*(.+)$', sec.group(1), re.MULTILINE)
         if rel:
             relevant = [f.strip() for f in rel.group(1).split(',') if f.strip()]
+        t = re.search(r'^Tier:\s*(\S+)$', sec.group(1), re.MULTILINE)
+        if t:
+            tier = t.group(1).strip()
     print(task_id)
     print(title)
     print(json.dumps(relevant))
+    print(tier)
 " "$_spec_tasks" 2>/dev/null || echo "")
         if [[ -n "$_next_result" ]]; then
           _next_task_id=$(echo    "$_next_result" | sed -n '1p')
           _next_task_title=$(echo "$_next_result" | sed -n '2p')
           _next_relevant_files=$(echo "$_next_result" | sed -n '3p')
+          _next_tier=$(echo "$_next_result" | sed -n '4p')
           [[ -z "$_next_relevant_files" ]] && _next_relevant_files="[]"
+          [[ -z "$_next_tier" ]] && _next_tier="medium"
         fi
       fi
 
@@ -873,6 +889,7 @@ if m:
         sync_write "ralph.task_id"       "$_next_task_id"       2>/dev/null || true
         sync_write "ralph.task_title"    "$_next_task_title"    2>/dev/null || true
         sync_write "ralph.relevant_files" "$_next_relevant_files" 2>/dev/null || true
+        sync_write "ralph.tier"          "$_next_tier"          2>/dev/null || true
         echo "  → Next: $_next_task_id — $_next_task_title"
         echo "[$ITERATION] Advanced to $_next_task_id: $(date)" >> "$LOG_FILE"
       else
