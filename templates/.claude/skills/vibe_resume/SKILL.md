@@ -1,10 +1,10 @@
 ---
-name: resume
+name: vibe_resume
 description: Resume a paused vibekit session. Checks Ralph state, reports progress, and picks up from the right point without replanning.
-trigger: /resume
+trigger: /vibe_resume
 ---
 
-# /resume — Resume Paused vibekit Session
+# /vibe_resume — Resume Paused vibekit Session
 
 You are resuming a session interrupted by a usage limit, terminal close, or restart.
 Do not replan. Do not regenerate specs. Pick up exactly where things left off.

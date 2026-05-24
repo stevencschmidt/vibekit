@@ -16,12 +16,12 @@ At the start of every session, before responding to the user's first message: si
 `state/sync.json`. If `ralph.task_id` is non-null, emit this notice on the first line of your
 response:
 
-> ⚡ Active work: `<spec-slug>` · T`<task_id>` — `<task_title>`. Type `/resume` to continue.
+> ⚡ Active work: `<spec-slug>` · T`<task_id>` — `<task_title>`. Type `/vibe_resume` to continue.
 
 The spec-slug comes from `vibekit.config.sh` (`SPEC_TASKS_FILE` path, directory name only).
 If `vibekit.config.sh` is unreadable, use the task_id and task_title from `sync.json` alone.
 
-Then answer the user's question normally. Do not auto-invoke `/resume` — show the notice only.
+Then answer the user's question normally. Do not auto-invoke `/vibe_resume` — show the notice only.
 
 ---
 
@@ -42,7 +42,7 @@ When asked to build, fix, investigate, or debug anything non-trivial:
 1. Use `/vibeplan` to generate Ralph tasks (new features) or `/vibeplan <problem description>` (fixes/debugging)
 2. Run `bash scripts/ralph.sh` to execute
 
-**After a usage-limit pause or session restart:** `/resume`
+**After a usage-limit pause or session restart:** `/vibe_resume`
 
 **Exception:** Single-file edits requiring one tool call with no iteration (e.g. fixing a typo, updating a config value).
 

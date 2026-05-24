@@ -10,6 +10,17 @@ Before starting any task, read `docs/claude/manifest.json`. Based on the task at
 
 ---
 
+## Project Boundaries
+
+This repo contains **vibekit source only**. Do not create phramewerks-specific files here.
+
+- **phramewerks** (test project using vibekit) lives at `/home/steven/phramewerks`
+- Bugs are identified while building phramewerks, fixed here in vibekit, then synced back
+- After fixing any vibekit file, run `bash scripts/push-to-phramewerks.sh` to push changes
+- When adding new infrastructure files to `init.sh`, add them to `push-to-phramewerks.sh` too
+
+---
+
 ## Session Policy
 
 This session is for planning and conversation only. Do not implement, fix, or debug code inline.

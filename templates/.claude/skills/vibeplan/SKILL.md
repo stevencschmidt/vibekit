@@ -728,7 +728,7 @@ Translate matched events for the user as they arrive:
 |-----------|---------|
 | `TASK_START task=T003 title=...` | "Ralph → T003 starting: `<title>`" |
 | `Completed T003` | "✓ T003 done" |
-| `RATE_LIMIT until ...` | Stop monitoring immediately. Say: "Rate limit hit. Ralph will resume automatically at `<reset_time>` — no action needed on your end. Stopping chat monitoring now to preserve your remaining quota. Optional: to auto-restart Ralph at the shell if it stops, run `echo 'bash scripts/ralph.sh' \| at HH:MM` (replace HH:MM with the reset time; requires `at` to be installed). When you return after the reset, type `/resume` to check progress." |
+| `RATE_LIMIT until ...` | Stop monitoring immediately. Say: "Rate limit hit. Ralph will resume automatically at `<reset_time>` — no action needed on your end. Stopping chat monitoring now to preserve your remaining quota. Optional: to auto-restart Ralph at the shell if it stops, run `echo 'bash scripts/ralph.sh' \| at HH:MM` (replace HH:MM with the reset time; requires `at` to be installed). When you return after the reset, type `/vibe_resume` to check progress." |
 | `RATE_LIMIT_RESUMED window=...` | (monitoring already stopped — this event appears in `state/ralph.log` only) |
 | `QC_CHECKPOINT n=N` | "Checkpoint QC `<N>` running..." |
 | `QC_FINAL round=1` | "Final QC running..." |
