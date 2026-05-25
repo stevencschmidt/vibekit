@@ -1,30 +1,9 @@
 # Tasks: 008-state-commit-hygiene
 
 - [x] T001 · templates/.gitignore: ignore state/
-- [ ] T002 · init.sh: idempotently add state/ to an existing .gitignore
+- [x] T002 · init.sh: idempotently add state/ to an existing .gitignore
 - [ ] T003 · ralph.sh safety_commit: accurate message + don't sweep pre-existing WIP
 - [ ] T004 · Docs: resolve T011 note + DECISION:011 + conventions/manifest
-
----
-
-## T001 · templates/.gitignore: ignore state/
-Depends on: —
-Verify: `grep -qE '^state/?$' templates/.gitignore && bash -n init.sh` exits 0
-Relevant: docs/claude/conventions.md
-Tier: simple
-
-Add a `state/` entry to `templates/.gitignore` (the file `init.sh` scaffolds into
-new projects). vibekit's own root `.gitignore` already has this under a
-"Runtime state" comment — mirror that. Add a short comment line above it, e.g.:
-
-```
-# Runtime state (logs, pid, sync) — project-specific, not for git
-state/
-```
-
-Place it near the existing sections; do not remove or reorder existing entries.
-
-[TASK_COMPLETE: T001] when `templates/.gitignore` ignores `state/` and Verify passes.
 
 ---
 

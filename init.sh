@@ -121,9 +121,14 @@ with open(path, 'w') as f: f.write(content.replace('PROJECT_NAME', name))
   fi
 done
 
-# .gitignore (only if one doesn't already exist)
+# .gitignore (copy if absent; ensure state/ ignored if already present)
 if [[ ! -f "$TARGET_DIR/.gitignore" ]]; then
   cp "$VIBEKIT_DIR/templates/.gitignore" "$TARGET_DIR/.gitignore"
+else
+  if ! grep -qE '^state/?$' "$TARGET_DIR/.gitignore"; then
+    printf '\n# ensure state/ ignored (vibekit runtime state)\nstate/\n' >> "$TARGET_DIR/.gitignore"
+    echo "  .gitignore: appended 'state/' entry (ensure state/ ignored)"
+  fi
 fi
 
 # .claude/skills
