@@ -16,3 +16,6 @@ Thumbs.db
 node_modules/
 __pycache__/
 *.pyc
+
+# Runtime state (logs, pid, sync) — project-specific, not for git
+state/

@@ -1,6 +1,6 @@
 # Tasks: 008-state-commit-hygiene
 
-- [ ] T001 · templates/.gitignore: ignore state/
+- [x] T001 · templates/.gitignore: ignore state/
 - [ ] T002 · init.sh: idempotently add state/ to an existing .gitignore
 - [ ] T003 · ralph.sh safety_commit: accurate message + don't sweep pre-existing WIP
 - [ ] T004 · Docs: resolve T011 note + DECISION:011 + conventions/manifest
