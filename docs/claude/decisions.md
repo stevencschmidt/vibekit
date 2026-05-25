@@ -1,6 +1,6 @@
 # Decision Log
 
-Total decisions: 010
+Total decisions: 011
 
 Append-only audit log. Each entry has an anchor for precise retrieval.
 
@@ -104,3 +104,13 @@ Append-only audit log. Each entry has an anchor for precise retrieval.
 - Fixes: added a "session limit" pattern to `is_rate_limited_output`; wrapped the bell in a brace group `{ printf '\a' > /dev/tty; } 2>/dev/null || true` so the redirect-open error is captured while the bell still rings whenever a controlling terminal exists. Verified with a detached-session (`setsid`, stdout/stderr→file) reproduction.
 - Fixed inline (single-file, no-iteration edits) per the session-policy exception, following the DECISION:006 precedent for ralph.sh runtime fixes.
 - Considered but rejected: routing through `/vibeplan` → Ralph (overhead for two one-liners, and fixing the rate-limit detector via an autonomous run that itself depends on that detector is circular); `[ -t 1 ]` gate for the bell (skips the bell on any stdout redirect even when a controlling tty exists).
+
+---
+
+<!-- DECISION:011 | domains: architecture, conventions -->
+## DECISION:011 — Gitignore runtime state instead of committing it (resolves the T011 gap)
+
+- Files updated: specs/008-state-commit-hygiene/{spec.md,tasks.md} (new), docs/briefs/008-state-commit-hygiene.md (new), state/sync.json, vibekit.config.sh; subsequent ralph tasks edit templates/.gitignore, init.sh, scripts/ralph.sh, docs/claude/{architecture.md,conventions.md,manifest.json}, CLAUDE.md.
+- Why: reviewing phramewerks showed `templates/.gitignore` (scaffolded by `init.sh`) omits `state/`, so scaffolded projects tracked runtime state (including `ralph.pid`) and fired ~33 misleading "Ralph post-complete fallback commit: T### (Claude did not commit)" commits — most just swept state churn that `ralph.sh` writes *after* the agent's own commit. vibekit's own `.gitignore` already ignores `state/`; the template diverged.
+- Decision: gitignore volatile state (match vibekit's own `.gitignore`) rather than commit it. This **supersedes** the previously documented T011 plan to add explicit state-file commits — with `state/` ignored there is no residue to commit. Also harden `safety_commit` to (a) report accurately by comparing HEAD to `PRE_SHA` (the agent usually did commit) and (b) never sweep pre-existing working-tree changes (snapshot the dirty set as `PRE_DIRTY` at iteration start). `init.sh` additionally repairs existing projects by appending `state/` to an existing `.gitignore` that lacks it.
+- Considered but rejected: T011's "explicitly commit state files" approach (keeps churn in git history and still commits `ralph.pid`; gitignore is simpler and matches vibekit's own setup); scoping the agent's own `git add -A` in `ralph-prompt.md` (a clean per-task tree makes it unnecessary; the fallback is where the unscoped sweep actually bit). Out of scope: migrating phramewerks (firewall — done in a phramewerks session).
