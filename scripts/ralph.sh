@@ -357,16 +357,39 @@ check_usage_before_iteration() {
 # === Safety Commit ===
 safety_commit() {
   local task_id="$1"
+  # Clean tree → the agent committed everything; nothing to sweep.
   if git -C "$PROJECT_ROOT" diff --quiet && \
      git -C "$PROJECT_ROOT" diff --cached --quiet; then
     return 0
   fi
-  echo "  ⚠ Uncommitted changes detected — creating safety commit"
-  git -C "$PROJECT_ROOT" add -A
-  git -C "$PROJECT_ROOT" commit \
-    -m "Ralph post-complete fallback commit: $task_id (Claude did not commit)" \
-    2>/dev/null || true
-  echo "[$ITERATION] POST-COMPLETE FALLBACK COMMIT for $task_id: $(date)" >> "$LOG_FILE"
+
+  # Stage only paths that changed during THIS iteration. Exclude pre-existing WIP
+  # captured in $PRE_DIRTY at iteration start — never a blind `git add -A`.
+  local _path
+  while IFS= read -r _path; do
+    [[ -z "$_path" ]] && continue
+    if printf '%s\n' "$PRE_DIRTY" | grep -qxF -- "$_path"; then
+      continue  # pre-existing WIP — leave it untouched
+    fi
+    git -C "$PROJECT_ROOT" add -- "$_path" 2>/dev/null || true
+  done < <(git -C "$PROJECT_ROOT" status --porcelain | awk '{print $NF}')
+
+  # Nothing left to commit after excluding pre-existing WIP → do not commit.
+  if git -C "$PROJECT_ROOT" diff --cached --quiet; then
+    return 0
+  fi
+
+  # Message reflects whether the agent already committed this iteration.
+  local _msg
+  if [[ "$(git -C "$PROJECT_ROOT" rev-parse HEAD)" != "$PRE_SHA" ]]; then
+    _msg="Ralph residual-changes commit: $task_id"
+  else
+    _msg="Ralph fallback commit: $task_id (agent emitted TASK_COMPLETE without committing)"
+  fi
+
+  echo "  ⚠ Uncommitted iteration changes detected — creating safety commit"
+  git -C "$PROJECT_ROOT" commit -m "$_msg" 2>/dev/null || true
+  echo "[$ITERATION] POST-COMPLETE SAFETY COMMIT for $task_id: $(date)" >> "$LOG_FILE"
 }
 
 # === State File Commit Helper ===
@@ -685,6 +708,9 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
 
   # Save HEAD SHA for rollback
   PRE_SHA=$(git -C "$PROJECT_ROOT" rev-parse HEAD)
+  # Snapshot paths already dirty BEFORE the task runs — pre-existing working-tree
+  # work (WIP) that safety_commit must not sweep into a task commit.
+  PRE_DIRTY=$(git -C "$PROJECT_ROOT" status --porcelain | awk '{print $NF}')
 
   # --- Build task prompt (base + relevant files from sync.json) ---
   _TASK_PROMPT="Read $_RALPH_PROMPT_EFFECTIVE and execute the task in $SYNC_FILE."

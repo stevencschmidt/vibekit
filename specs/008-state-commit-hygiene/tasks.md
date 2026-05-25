@@ -2,31 +2,8 @@
 
 - [x] T001 · templates/.gitignore: ignore state/
 - [x] T002 · init.sh: idempotently add state/ to an existing .gitignore
-- [ ] T003 · ralph.sh safety_commit: accurate message + don't sweep pre-existing WIP
+- [x] T003 · ralph.sh safety_commit: accurate message + don't sweep pre-existing WIP
 - [ ] T004 · Docs: resolve T011 note + DECISION:011 + conventions/manifest
-
----
-
-## T002 · init.sh: idempotently add state/ to an existing .gitignore
-Depends on: T001
-Verify: `bash -n init.sh && grep -q 'ensure state/ ignored' init.sh` exits 0
-Relevant: docs/claude/conventions.md, docs/claude/architecture.md
-Tier: medium
-
-`init.sh` currently copies `templates/.gitignore` only when the target has none
-(around `init.sh:125`, the `if [[ ! -f "$TARGET_DIR/.gitignore" ]]` block). So
-existing projects never receive `.gitignore` fixes.
-
-Extend that block: in the `else` branch (target already has a `.gitignore`),
-ensure `state/` is ignored — if `grep -qE '^state/?$' "$TARGET_DIR/.gitignore"`
-finds nothing, append a blank line, a comment `# ensure state/ ignored (vibekit
-runtime state)`, and `state/` to the file, and echo a line so the user sees it.
-Make it idempotent (no duplicate append if already present). Keep the existing
-copy-if-absent path unchanged. The marker comment string `ensure state/ ignored`
-must appear in `init.sh`.
-
-[TASK_COMPLETE: T002] when re-running init.sh repairs an existing .gitignore and
-Verify passes.
 
 ---
 
