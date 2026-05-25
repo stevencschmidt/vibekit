@@ -2,13 +2,13 @@
   "files": [
     {
       "path": "docs/claude/architecture.md",
-      "summary": "Three-pillar architecture (Knowledge Graph, /vibeplan, Ralph), component map, per-iteration flow with model routing from task tier and QC pinned to MODEL_QC, tasks/brief archive split, sync-agent mode dispatch, and key boundaries.",
-      "tags": ["architecture", "pillars", "components", "ralph", "sync-agent", "qc", "manifest", "boundaries", "archive", "brief", "design", "model-routing", "tier"]
+      "summary": "Three-pillar architecture (Knowledge Graph, /vibeplan, Ralph), component map, per-iteration flow with model routing from task tier and QC pinned to MODEL_QC, tasks/brief archive split, sync-agent mode dispatch, runtime state gitignore policy (DECISION:011), and key boundaries.",
+      "tags": ["architecture", "pillars", "components", "ralph", "sync-agent", "qc", "manifest", "boundaries", "archive", "brief", "design", "model-routing", "tier", "state", "gitignore"]
     },
     {
       "path": "docs/claude/conventions.md",
-      "summary": "Script style, commit prefixes, sentinel protocol, skill format, verify_build() stack-awareness, model routing/tier convention (tier→model mapping, escalation, QC pinning), structured delta obligation, archive file naming, sync hook arg convention, session policy.",
-      "tags": ["conventions", "commit-prefixes", "sentinels", "verify-build", "skill-format", "session-policy", "structured-delta", "archive", "sync-hook", "model-routing", "tier"]
+      "summary": "Script style, commit prefixes, sentinel protocol, skill format, verify_build() stack-awareness, model routing/tier convention (tier→model mapping, escalation, QC pinning), structured delta obligation, archive file naming, runtime state gitignore policy with scoped safety_commit (DECISION:011), sync hook arg convention, session policy.",
+      "tags": ["conventions", "commit-prefixes", "sentinels", "verify-build", "skill-format", "session-policy", "structured-delta", "archive", "sync-hook", "model-routing", "tier", "state", "gitignore", "safety-commit"]
     },
     {
       "path": "docs/claude/stack.md",

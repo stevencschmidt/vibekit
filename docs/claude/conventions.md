@@ -11,6 +11,10 @@
 - Scripts that are sourced (sync-helpers.sh, monitor.sh) do not use `set -e` at top level — callers own error handling
 - Python interpreter resolved via `PYTHON` variable: try `python3` first, fall back to `python` if it's Python 3
 
+## Runtime State Handling
+
+Scaffolded projects gitignore `state/` (logs, pid, sync state). The `templates/.gitignore` mirrors this, and `init.sh` patches existing projects idempotently. `ralph.sh`'s `safety_commit` function scopes staging to iteration changes only (comparing current `git status` against a pre-iteration snapshot in `$PRE_DIRTY`), and reports accurately by checking whether HEAD advanced since iteration start. See DECISION:011.
+
 ## Commit Prefixes
 
 ```

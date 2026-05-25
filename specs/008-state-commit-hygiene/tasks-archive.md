@@ -44,3 +44,39 @@ Verify passes.
 
 ---
 
+## T003 · ralph.sh safety_commit: accurate message + don't sweep pre-existing WIP
+Depends on: T001
+Verify: `bash -n scripts/ralph.sh && grep -q 'PRE_DIRTY' scripts/ralph.sh && ! grep -q 'Claude did not commit' scripts/ralph.sh` exits 0
+Relevant: docs/claude/architecture.md, docs/claude/conventions.md
+Tier: complex
+
+Two changes in `scripts/ralph.sh`:
+
+1. **Snapshot the pre-iteration dirty set.** Where `PRE_SHA=$(git -C
+   "$PROJECT_ROOT" rev-parse HEAD)` is captured at iteration start (~line 687),
+   also capture the paths already modified/untracked BEFORE the task runs:
+   ```bash
+   PRE_DIRTY=$(git -C "$PROJECT_ROOT" status --porcelain | awk '{print $NF}')
+   ```
+   This is pre-existing working-tree work (WIP) that the task must not sweep.
+
+2. **Rewrite `safety_commit()` (~line 358).** Keep the early return when the tree
+   is clean. Otherwise:
+   - Stage only paths changed during THIS iteration — i.e. current
+     `git status --porcelain` paths that are NOT in `$PRE_DIRTY`. Do not run a
+     blind `git add -A`. If nothing remains to stage after excluding `$PRE_DIRTY`,
+     return without committing.
+   - Choose the commit message by comparing HEAD to `$PRE_SHA`: if HEAD advanced
+     (the agent committed), use `Ralph residual-changes commit: $task_id`; if HEAD
+     == `$PRE_SHA` (agent committed nothing), use `Ralph fallback commit: $task_id
+     (agent emitted TASK_COMPLETE without committing)`.
+   - The literal string `Claude did not commit` must be removed entirely.
+
+Do not change the call site (line ~807). With `state/` now gitignored (T001), the
+routine residue disappears, so this fallback should rarely fire at all.
+
+[TASK_COMPLETE: T003] when safety_commit is scoped + accurately messaged and
+Verify passes.
+
+---
+

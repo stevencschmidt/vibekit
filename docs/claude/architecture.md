@@ -79,9 +79,9 @@ Entry point for setting up a new project. Copies scripts, templates, creates dir
 
 ---
 
-### State File Commit Gap (known, T011)
+### Runtime State Handling (DECISION:011)
 
-`ralph.sh` does not commit `state/sync.json` or `state/session-log.json` after QC completes or at run end. These files are left dirty and swept up by the *next* run's `safety_commit`, which incorrectly labels them "Claude did not commit." T011 will add explicit state-file commits at QC_COMPLETE, stall-exit, and max-iter paths.
+Volatile runtime state (`state/sync.json`, `state/session-log.json`, `state/ralph.pid`) is gitignored instead of committed. The `init.sh` template ensures `state/` appears in every scaffolded project's `.gitignore`; for existing projects, `init.sh` repairs this idempotently on next run. This eliminates the residual-commit churn that previously plagued scaffolded projects. See DECISION:011 for rationale and the fallback `safety_commit` hardening (scoped staging + accurate messages).
 
 ### Inline Monitoring Pattern
 
