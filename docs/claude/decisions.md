@@ -1,6 +1,6 @@
 # Decision Log
 
-Total decisions: 011
+Total decisions: 012
 
 Append-only audit log. Each entry has an anchor for precise retrieval.
 
@@ -113,4 +113,14 @@ Append-only audit log. Each entry has an anchor for precise retrieval.
 - Files updated: specs/008-state-commit-hygiene/{spec.md,tasks.md} (new), docs/briefs/008-state-commit-hygiene.md (new), state/sync.json, vibekit.config.sh; subsequent ralph tasks edit templates/.gitignore, init.sh, scripts/ralph.sh, docs/claude/{architecture.md,conventions.md,manifest.json}, CLAUDE.md.
 - Why: reviewing phramewerks showed `templates/.gitignore` (scaffolded by `init.sh`) omits `state/`, so scaffolded projects tracked runtime state (including `ralph.pid`) and fired ~33 misleading "Ralph post-complete fallback commit: T### (Claude did not commit)" commits — most just swept state churn that `ralph.sh` writes *after* the agent's own commit. vibekit's own `.gitignore` already ignores `state/`; the template diverged.
 - Decision: gitignore volatile state (match vibekit's own `.gitignore`) rather than commit it. This **supersedes** the previously documented T011 plan to add explicit state-file commits — with `state/` ignored there is no residue to commit. Also harden `safety_commit` to (a) report accurately by comparing HEAD to `PRE_SHA` (the agent usually did commit) and (b) never sweep pre-existing working-tree changes (snapshot the dirty set as `PRE_DIRTY` at iteration start). `init.sh` additionally repairs existing projects by appending `state/` to an existing `.gitignore` that lacks it.
-- Considered but rejected: T011's "explicitly commit state files" approach (keeps churn in git history and still commits `ralph.pid`; gitignore is simpler and matches vibekit's own setup); scoping the agent's own `git add -A` in `ralph-prompt.md` (a clean per-task tree makes it unnecessary; the fallback is where the unscoped sweep actually bit). Out of scope: migrating phramewerks (firewall — done in a phramewerks session).
+- Considered but rejected: T011's "explicitly commit state files" approach (keeps churn in git history and still commits `ralph.pid`; gitignore is simpler and matches vibekit's own setup); scoping the agent's own `git add -A` in `ralph-prompt.md` (a clean per-task tree makes it necessary; the fallback is where the unscoped sweep actually bit). Out of scope: migrating phramewerks (firewall — done in a phramewerks session).
+
+---
+
+<!-- DECISION:012 | domains: architecture, conventions -->
+## DECISION:012 — Single-instance concurrency guard (pid-liveness + untrack-on-adopt)
+
+- Files updated: specs/009-ralph-concurrency-and-state-untrack/{spec.md,tasks.md} (new), docs/briefs/009-ralph-concurrency-and-state-untrack.md (new), state/sync.json, vibekit.config.sh; subsequent ralph tasks edit scripts/ralph.sh, init.sh, docs/claude/{conventions.md,manifest.json}, CLAUDE.md.
+- Why: Two concurrent `ralph.sh` instances can corrupt `state/sync.json` by reading/writing task state simultaneously. The pid-liveness mechanism (same pattern `/vibe_resume` uses) is portable across platforms — not `flock`, which fails on Windows/Git Bash. Additionally, `init.sh` must untrack already-committed `state/` files from the index on adopt; `.gitignore` entries do not retroactively untrack committed files, so `git rm -r --cached state/` is necessary when vibekit is added to existing projects that may have accidentally committed state artifacts.
+- How it works: Ralph writes `$$` to `state/ralph.pid` at startup. Before running, it reads the file and tests liveness using `kill -0 <pid>` (test signal, no process killed). If a live process is detected, it refuses to run unless `--force` or `RALPH_FORCE=1` overrides. An EXIT trap (`_ralph_exit_cleanup`) releases the pid file by comparing the stored pid against the exiting process's `$$` — only deleting if owned by the current instance, preventing a newer Ralph (spawned with `--force` before the old one exited) from losing its pid marker.
+- Considered but rejected: `flock` for portability (not available on Windows/Git Bash); `mkdir` atomicity (less portable than pid + kill); higher-level tooling like a lock service (adds runtime dependency). The lightweight pid + liveness pattern is mature, portable, and aligns with `/vibe_resume`'s detection logic.

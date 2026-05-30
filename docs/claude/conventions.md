@@ -15,6 +15,22 @@
 
 Scaffolded projects gitignore `state/` (logs, pid, sync state). The `templates/.gitignore` mirrors this, and `init.sh` patches existing projects idempotently. `ralph.sh`'s `safety_commit` function scopes staging to iteration changes only (comparing current `git status` against a pre-iteration snapshot in `$PRE_DIRTY`), and reports accurately by checking whether HEAD advanced since iteration start. See DECISION:011.
 
+### Single-Instance Concurrency Guard
+
+`ralph.sh` maintains a `state/ralph.pid` file to enforce single-instance execution. Two concurrent Ralph instances against the same `state/sync.json` corrupt each other's state, so the guard:
+
+- Writes `$$` (current process ID) to `state/ralph.pid` at startup
+- On startup, checks if an existing pid file's process is alive using `kill -0 <pid>` (liveness test, no signal sent)
+- If a live process is detected and neither `--force` flag nor `RALPH_FORCE=1` env var is set, exits with an error directing the user to `/vibe_resume` or `--force`
+- With `--force` or `RALPH_FORCE=1`, warns and overrides (used when a process has gone away but the pid is held by an unrelated process reusing the ID)
+- Registers an EXIT trap (`_ralph_exit_cleanup`) that releases the pid file by verifying ownership: only deletes the file if the stored pid matches the exiting process's `$$`
+
+This mechanism is reconciled with `/vibe_resume`, which uses the same pid-liveness pattern to detect whether Ralph is running.
+
+### Untrack Already-Committed State on Adopt
+
+`init.sh` runs idempotently on both fresh repositories and existing projects with vibekit added later. When adopting vibekit into an existing project that may have already committed `state/` artifacts, `init.sh` untrracks the `state/` directory from the git index using `git rm -r --cached state/` (no-op on fresh repos where state/ was never committed). This ensures that future Ralph runs write temporary files (.pid, .log, sync.json snapshots) without creating git churn. See DECISION:011 for the rationale: gitignore prevents commits, but `.gitignore` entries do not untrack already-committed files — the `git rm --cached` call is necessary.
+
 ## Commit Prefixes
 
 ```

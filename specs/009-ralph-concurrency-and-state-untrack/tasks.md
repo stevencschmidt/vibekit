@@ -2,38 +2,7 @@
 
 - [x] T001 · ralph.sh: single-instance lock + EXIT-trap pid release + session hardening
 - [x] T002 · init.sh: untrack state/ on adopt
-- [ ] T003 · Knowledge-graph reconcile + DECISION:012
-
----
-
-## T002 · init.sh: untrack state/ on adopt
-Depends on: —
-Verify: `bash -n init.sh` exits 0
-Relevant: init.sh, templates/.gitignore, docs/claude/conventions.md
-Tier: medium
-
-`init.sh` (lines 124-132) appends `state/` to an existing `.gitignore`, but appending
-to `.gitignore` cannot untrack files already committed. A project scaffolded before
-spec 008 (e.g. phramewerks) keeps all `state/` files tracked, producing residual /
-fallback commit noise and risking `state/ralph.log` truncation on `git reset --hard`.
-
-In `init.sh`, after the `.gitignore` ensure-`state/` block (around line 132) and
-BEFORE the initial-commit block (line 163), add a guarded untrack step:
-
-- Only act if `$TARGET_DIR` is inside a git repo: `git -C "$TARGET_DIR" rev-parse
-  --git-dir &>/dev/null`.
-- Only act if any `state/` path is currently tracked: test that
-  `git -C "$TARGET_DIR" ls-files state/` is non-empty.
-- If both hold, run `git -C "$TARGET_DIR" rm -r --cached --quiet state/` (removes from
-  the index only — working files stay on disk) and echo a one-line notice
-  ("Untracked already-committed state/ from the index").
-- Must be a no-op on a fresh project (nothing tracked yet) and safe to run repeatedly.
-- Note: the actual commit of this index change happens via the existing initial-commit
-  block for fresh adopts; for an already-initialized repo, init.sh does not create a
-  commit, so leave the staged removal for the project's own session to commit. Do not
-  add a new `git commit` to init.sh.
-
-After editing, run `bash -n init.sh` — it must exit 0.
+- [x] T003 · Knowledge-graph reconcile + DECISION:012
 
 ---
 

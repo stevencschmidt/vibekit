@@ -7,8 +7,8 @@
     },
     {
       "path": "docs/claude/conventions.md",
-      "summary": "Script style, commit prefixes, sentinel protocol, skill format, verify_build() stack-awareness, model routing/tier convention (tier→model mapping, escalation, QC pinning), structured delta obligation, archive file naming, runtime state gitignore policy with scoped safety_commit (DECISION:011), sync hook arg convention, session policy.",
-      "tags": ["conventions", "commit-prefixes", "sentinels", "verify-build", "skill-format", "session-policy", "structured-delta", "archive", "sync-hook", "model-routing", "tier", "state", "gitignore", "safety-commit"]
+      "summary": "Script style, commit prefixes, sentinel protocol, skill format, verify_build() stack-awareness, model routing/tier convention (tier→model mapping, escalation, QC pinning), structured delta obligation, archive file naming, runtime state gitignore policy with scoped safety_commit (DECISION:011), single-instance concurrency guard (pid-liveness check, --force override, EXIT-trap release), untrack-on-adopt for state/ (DECISION:012), sync hook arg convention, session policy.",
+      "tags": ["conventions", "commit-prefixes", "sentinels", "verify-build", "skill-format", "session-policy", "structured-delta", "archive", "sync-hook", "model-routing", "tier", "state", "gitignore", "safety-commit", "concurrency", "lock", "pid", "untrack"]
     },
     {
       "path": "docs/claude/stack.md",

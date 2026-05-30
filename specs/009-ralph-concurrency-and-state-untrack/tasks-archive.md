@@ -1,0 +1,80 @@
+# Archive: 009-ralph-concurrency-and-state-untrack
+
+## T001 · ralph.sh: single-instance lock + EXIT-trap pid release + session hardening
+Depends on: —
+Verify: `bash -n scripts/ralph.sh` exits 0
+Relevant: scripts/ralph.sh, templates/.claude/skills/vibe_resume/SKILL.md, docs/claude/conventions.md
+Tier: complex
+
+`scripts/ralph.sh` writes `state/ralph.pid` (`echo $$ > "${SYNC_FILE%/*}/ralph.pid"`,
+~line 462) but never checks it, so two `bash scripts/ralph.sh` runs execute
+concurrently against the same `state/sync.json`. Add a single-instance guard plus a
+reliable pid-release, and harden the session counter.
+
+Implement three changes in `scripts/ralph.sh`:
+
+1. **Startup concurrency guard.** After the existing validation (sync.json well-formed,
+   git initialized, HEAD resolvable — around lines 117-156) and BEFORE the pid is
+   written at ~line 462, add a guard:
+   - Compute `_PID_FILE="${SYNC_FILE%/*}/ralph.pid"`.
+   - If `_PID_FILE` exists and contains a value `_other`:
+     - If `_other` != `$$` AND `kill -0 "$_other" 2>/dev/null` succeeds → another live
+       instance is running. Unless `--force` was passed OR `RALPH_FORCE=1` is set in
+       the environment, print a clear message ("Ralph already running (PID `<pid>`).
+       Use /vibe_resume to monitor it, or pass --force to override.") and `exit 1`.
+     - Otherwise (dead pid, or our own) → remove the stale pid file and continue.
+   - Add a `--force` flag to the argument parser (set `FORCE=1`); also honor
+     `RALPH_FORCE=1` from the environment. Keep the existing `echo $$ > "$_PID_FILE"`
+     write after the guard.
+   - This must reconcile with `vibe_resume` SKILL.md step 1, which already uses
+     `kill -0 <pid>` for liveness — same mechanism, no contradiction. Do NOT use
+     `flock` (not portable to Windows/Git Bash).
+
+2. **EXIT-trap pid release.** The "all tasks complete" exit path (~lines 561-566, the
+   `--skip-qc`/no-brief case) exits 0 without calling `notify_exit`, so it leaks a
+   stale `ralph.pid`. Add an `EXIT` trap (extend the existing temp-prompt-cleanup trap
+   at ~line 437 rather than overwriting it) that removes `_PID_FILE` ONLY if it still
+   contains `$$` (so we never delete a newer instance's pid). `notify_exit` already
+   removes the pid on its paths; the trap is the backstop for paths that bypass it.
+
+3. **Session-counter hardening.** At ~lines 526-529, `RALPH_SESSION` only resets to 1
+   when the value is empty or `null`. A literal `0` (or any non-positive / non-numeric
+   value) sticks, producing `"session": 0` in sync.json. Coerce any value that is not
+   a positive integer to `1`.
+
+Do not change rate-limit handling, the QC loop, or model routing. After editing, run
+`bash -n scripts/ralph.sh` — it must exit 0.
+
+---
+
+## T002 · init.sh: untrack state/ on adopt
+Depends on: —
+Verify: `bash -n init.sh` exits 0
+Relevant: init.sh, templates/.gitignore, docs/claude/conventions.md
+Tier: medium
+
+`init.sh` (lines 124-132) appends `state/` to an existing `.gitignore`, but appending
+to `.gitignore` cannot untrack files already committed. A project scaffolded before
+spec 008 (e.g. phramewerks) keeps all `state/` files tracked, producing residual /
+fallback commit noise and risking `state/ralph.log` truncation on `git reset --hard`.
+
+In `init.sh`, after the `.gitignore` ensure-`state/` block (around line 132) and
+BEFORE the initial-commit block (line 163), add a guarded untrack step:
+
+- Only act if `$TARGET_DIR` is inside a git repo: `git -C "$TARGET_DIR" rev-parse
+  --git-dir &>/dev/null`.
+- Only act if any `state/` path is currently tracked: test that
+  `git -C "$TARGET_DIR" ls-files state/` is non-empty.
+- If both hold, run `git -C "$TARGET_DIR" rm -r --cached --quiet state/` (removes from
+  the index only — working files stay on disk) and echo a one-line notice
+  ("Untracked already-committed state/ from the index").
+- Must be a no-op on a fresh project (nothing tracked yet) and safe to run repeatedly.
+- Note: the actual commit of this index change happens via the existing initial-commit
+  block for fresh adopts; for an already-initialized repo, init.sh does not create a
+  commit, so leave the staged removal for the project's own session to commit. Do not
+  add a new `git commit` to init.sh.
+
+After editing, run `bash -n init.sh` — it must exit 0.
+
+---
+
