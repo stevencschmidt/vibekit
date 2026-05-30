@@ -86,6 +86,7 @@ DRY_RUN=false
 RESUME_TASK=""
 SKIP_QC=false
 MODEL_OVERRIDE=0
+FORCE=0
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -99,6 +100,7 @@ while [[ $# -gt 0 ]]; do
     --task=*)    RESUME_TASK="${1#*=}";   shift   ;;
     --dry-run)   DRY_RUN=true;            shift   ;;
     --skip-qc)   SKIP_QC=true;            shift   ;;
+    --force)     FORCE=1;                 shift   ;;
     *)
       if [[ "$1" =~ ^[0-9]+$ ]]; then
         MAX_ITERATIONS="$1"
@@ -433,8 +435,21 @@ sys.stdout.write(content)
     || cp "$RALPH_PROMPT" "$_RALPH_PROMPT_TEMP"
   _RALPH_PROMPT_EFFECTIVE="$_RALPH_PROMPT_TEMP"
 fi
+# EXIT trap: cleans temp prompt file AND releases ralph.pid if we still own it.
+# The pid check guards against deleting a newer instance's pid (e.g. if --force
+# was used and that newer instance writes its own pid before we exit).
+_ralph_exit_cleanup() {
+  rm -f "$_RALPH_PROMPT_TEMP" 2>/dev/null || true
+  if [[ -n "${_PID_FILE:-}" && -f "$_PID_FILE" ]]; then
+    local _stored
+    _stored=$(cat "$_PID_FILE" 2>/dev/null | tr -d '[:space:]')
+    if [[ "$_stored" == "$$" ]]; then
+      rm -f "$_PID_FILE" 2>/dev/null || true
+    fi
+  fi
+}
 # shellcheck disable=SC2064
-trap 'rm -f "$_RALPH_PROMPT_TEMP" 2>/dev/null || true' EXIT
+trap '_ralph_exit_cleanup' EXIT
 
 # Graceful shutdown on SIGINT (Ctrl+C) or SIGTERM
 _ralph_interrupted() {
@@ -458,8 +473,27 @@ echo "" >> "$LOG_FILE"
 echo "=== Run started: $(date) ===" >> "$LOG_FILE"
 echo "Tool: $TOOL | Model: $MODEL | Max: $MAX_ITERATIONS" >> "$LOG_FILE"
 
+# === Single-Instance Concurrency Guard ===
+# Two concurrent ralph.sh runs against the same state/sync.json corrupt each other's
+# state. Use the existing ralph.pid file plus `kill -0` for liveness (same mechanism
+# /vibe_resume uses, no contradiction). Not `flock` — not portable to Windows/Git Bash.
+# Override with --force or RALPH_FORCE=1 for cases where you've verified the other run
+# is gone but the pid is held by an unrelated process that happens to reuse the id.
+_PID_FILE="${SYNC_FILE%/*}/ralph.pid"
+if [[ -f "$_PID_FILE" ]]; then
+  _other=$(cat "$_PID_FILE" 2>/dev/null | tr -d '[:space:]')
+  if [[ -n "$_other" && "$_other" != "$$" ]] && kill -0 "$_other" 2>/dev/null; then
+    if [[ "${FORCE:-0}" -ne 1 && -z "${RALPH_FORCE:-}" ]]; then
+      echo "Ralph already running (PID $_other). Use /vibe_resume to monitor it, or pass --force to override." >&2
+      exit 1
+    fi
+    echo "  ⚠ Overriding live Ralph instance (PID $_other) — --force/RALPH_FORCE set" >&2
+  fi
+  rm -f "$_PID_FILE" 2>/dev/null || true
+fi
+
 # Write PID file so parent session can detect if Ralph is running
-echo $$ > "${SYNC_FILE%/*}/ralph.pid"
+echo $$ > "$_PID_FILE"
 
 # === Pre-flight Summary ===
 PREFLIGHT_TASK_ID=$(sync_read "ralph.task_id" 2>/dev/null || echo "null")
@@ -524,7 +558,9 @@ fi
 
 # === Session Tracking ===
 RALPH_SESSION=$(sync_read "ralph.session" 2>/dev/null || echo "1")
-if [[ -z "$RALPH_SESSION" || "$RALPH_SESSION" == "null" ]]; then
+# Coerce anything that isn't a positive integer (empty, "null", "0", negative, non-numeric)
+# to 1. A literal 0 in sync.json would otherwise stick and surface as session=0 downstream.
+if ! [[ "$RALPH_SESSION" =~ ^[1-9][0-9]*$ ]]; then
   RALPH_SESSION=1
 fi
 SESSION_START_ISO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
