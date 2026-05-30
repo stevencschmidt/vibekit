@@ -154,6 +154,14 @@ else
   cp "$VIBEKIT_DIR/templates/.claude/settings.json" "$TARGET_DIR/.claude/settings.json"
 fi
 
+# Untrack already-committed state/ from index (idempotent; no-op on fresh repos)
+if git -C "$TARGET_DIR" rev-parse --git-dir &>/dev/null; then
+  if [[ -n "$(git -C "$TARGET_DIR" ls-files state/)" ]]; then
+    git -C "$TARGET_DIR" rm -r --cached --quiet state/
+    echo "  Untracked already-committed state/ from the index"
+  fi
+fi
+
 # === 4. Git init if needed ===
 if [[ ! -d "$TARGET_DIR/.git" ]]; then
   echo "Initializing git repository..."
