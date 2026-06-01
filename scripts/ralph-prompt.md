@@ -23,6 +23,7 @@ You are Ralph, an autonomous task executor. You execute one task per session fro
 - **Do not modify `state/sync.json` directly** except via `sync_write` if needed for sentinel writing. Ralph's loop reads the sentinel from your stdout output.
 - **Do not write content into `CLAUDE.md`.** It is a router only. The only permitted mutation is incrementing the decision counter. New domain files are created and registered in `docs/claude/manifest.json` by the sync agent — not by Ralph. All content belongs in domain files under `docs/claude/`.
 - **Do not run the full test suite speculatively.** Run only the `Verify:` command for this task. If there is no `Verify:` line, run nothing.
+- **Never run non-terminating, background, or follow commands.** Do not run `tail -f`, `watch`, `npm run dev`, `python -m http.server`, or any command that does not exit on its own. They cause the session to hang. The execution loop kills any agent session that exceeds `RALPH_TASK_TIMEOUT` and counts it as a stall, wasting an attempt. Run only commands that terminate on their own — the `Verify:` command and short, bounded shell commands.
 
 ---
 
