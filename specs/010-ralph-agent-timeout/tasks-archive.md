@@ -121,3 +121,29 @@ Commit: `[ralph] T001 complete — ralph.sh timeout-bounds agent sessions + time
 
 ---
 
+## T002 · ralph-prompt.md: forbid non-terminating / background commands
+Depends on: T001
+Verify: `grep -qi 'tail -f' scripts/ralph-prompt.md && grep -qi 'non-terminating' scripts/ralph-prompt.md` exits 0
+Relevant: docs/claude/conventions.md
+Tier: simple
+
+Add a new bullet to the **## Execution Rules** section of `scripts/ralph-prompt.md`,
+immediately after the existing "Do not run the full test suite speculatively" rule:
+
+```markdown
+- **Never run non-terminating, background, or follow commands.** Do not run `tail -f`,
+  `watch`, `npm run dev`, `python -m http.server`, or any command that does not exit on
+  its own. They cause the session to hang. The execution loop kills any agent session
+  that exceeds `RALPH_TASK_TIMEOUT` and counts it as a stall, wasting an attempt. Run
+  only commands that terminate on their own — the `Verify:` command and short, bounded
+  shell commands.
+```
+
+If a synced copy of this prompt exists elsewhere in the repo (search for another
+`ralph-prompt.md`; there is normally only `scripts/ralph-prompt.md`), apply the same
+edit there. Do not touch phramewerks.
+
+Commit: `[ralph] T002 complete — ralph-prompt forbids non-terminating commands`
+
+---
+

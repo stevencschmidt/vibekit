@@ -31,6 +31,10 @@ This mechanism is reconciled with `/vibe_resume`, which uses the same pid-livene
 
 `init.sh` runs idempotently on both fresh repositories and existing projects with vibekit added later. When adopting vibekit into an existing project that may have already committed `state/` artifacts, `init.sh` untrracks the `state/` directory from the git index using `git rm -r --cached state/` (no-op on fresh repos where state/ was never committed). This ensures that future Ralph runs write temporary files (.pid, .log, sync.json snapshots) without creating git churn. See DECISION:011 for the rationale: gitignore prevents commits, but `.gitignore` entries do not untrack already-committed files — the `git rm --cached` call is necessary.
 
+### Agent-Session Hang Recovery
+
+Agent sessions are bounded by `RALPH_TASK_TIMEOUT` (default 1800 seconds; set to `0` to disable). If an agent hangs indefinitely (e.g., running a non-terminating command like `tail -f`), ralph.sh kills it after the timeout and classifies the hang as a stall, reusing the existing 3-strike failure machinery. The agent prompt forbids non-terminating commands to prevent this. See DECISION:013 for details.
+
 ## Commit Prefixes
 
 ```

@@ -124,3 +124,17 @@ Append-only audit log. Each entry has an anchor for precise retrieval.
 - Why: Two concurrent `ralph.sh` instances can corrupt `state/sync.json` by reading/writing task state simultaneously. The pid-liveness mechanism (same pattern `/vibe_resume` uses) is portable across platforms — not `flock`, which fails on Windows/Git Bash. Additionally, `init.sh` must untrack already-committed `state/` files from the index on adopt; `.gitignore` entries do not retroactively untrack committed files, so `git rm -r --cached state/` is necessary when vibekit is added to existing projects that may have accidentally committed state artifacts.
 - How it works: Ralph writes `$$` to `state/ralph.pid` at startup. Before running, it reads the file and tests liveness using `kill -0 <pid>` (test signal, no process killed). If a live process is detected, it refuses to run unless `--force` or `RALPH_FORCE=1` overrides. An EXIT trap (`_ralph_exit_cleanup`) releases the pid file by comparing the stored pid against the exiting process's `$$` — only deleting if owned by the current instance, preventing a newer Ralph (spawned with `--force` before the old one exited) from losing its pid marker.
 - Considered but rejected: `flock` for portability (not available on Windows/Git Bash); `mkdir` atomicity (less portable than pid + kill); higher-level tooling like a lock service (adds runtime dependency). The lightweight pid + liveness pattern is mature, portable, and aligns with `/vibe_resume`'s detection logic.
+
+---
+
+<!-- DECISION:013 | domains: architecture, conventions -->
+## DECISION:013 — Agent-session timeout (hang recovery)
+
+- ralph.sh now wraps every claude/amp invocation in `timeout -k 30 ${RALPH_TASK_TIMEOUT:-1800}`.
+- A timed-out agent (exit 124/137) is rolled back and counted as a stall, reusing the
+  existing 3-strike machinery. The prompt forbids non-terminating commands (`tail -f`, etc.).
+- Why: a hung inner agent (observed: an agent ran `tail -f` on ralph's own log) blocked
+  ralph.sh on the `claude | tee` pipe for 13+ hours. Recovery only ran after the agent
+  returned, so nothing fired. Bounding the session makes every hang recoverable.
+- Considered but rejected: per-tool-call timeouts (not reachable from the loop); `flock`-style
+  watchdog process (heavier, less portable than coreutils `timeout`).

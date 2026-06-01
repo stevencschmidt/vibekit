@@ -12,6 +12,9 @@ MODEL_MEDIUM="claude-sonnet-4-6"          # tier: medium (also the untagged fall
 MODEL_COMPLEX="claude-opus-4-7"           # tier: complex
 MODEL_QC="claude-opus-4-7"                # both QC stages always use this
 
+# === Timeout & Recovery ===
+# RALPH_TASK_TIMEOUT=1800   # seconds before a hung agent session is killed; 0 disables. Default 1800 (set in ralph.sh).
+
 SYNC_FILE="$PROJECT_ROOT/state/sync.json"
 SESSION_LOG_FILE="$PROJECT_ROOT/state/session-log.json"
 RALPH_PROMPT="$PROJECT_ROOT/scripts/ralph-prompt.md"
