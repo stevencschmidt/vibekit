@@ -17,10 +17,10 @@ SESSION_LOG_FILE="$PROJECT_ROOT/state/session-log.json"
 RALPH_PROMPT="$PROJECT_ROOT/scripts/ralph-prompt.md"
 DECISIONS_FILE="$PROJECT_ROOT/state/decisions.md"
 LOG_FILE="$PROJECT_ROOT/state/ralph.log"
-BRIEF_FILE="$PROJECT_ROOT/docs/briefs/009-ralph-concurrency-and-state-untrack.md"
+BRIEF_FILE="$PROJECT_ROOT/docs/briefs/010-ralph-agent-timeout.md"
 QC_PROMPT="$PROJECT_ROOT/scripts/qc-prompt.md"
 
-SPEC_TASKS_FILE="$PROJECT_ROOT/specs/009-ralph-concurrency-and-state-untrack/tasks.md"
+SPEC_TASKS_FILE="$PROJECT_ROOT/specs/010-ralph-agent-timeout/tasks.md"
 
 SKILLS=()
 
