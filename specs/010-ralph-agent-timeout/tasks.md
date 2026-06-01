@@ -1,6 +1,6 @@
 # Tasks: 010-ralph-agent-timeout
 
-- [ ] T001 · ralph.sh: timeout-wrap all agent invocations + classify timeout as a stall
+- [x] T001 · ralph.sh: timeout-wrap all agent invocations + classify timeout as a stall
 - [ ] T002 · ralph-prompt.md: forbid non-terminating / background commands
 - [ ] T003 · config default + DECISION:013 + docs note
 

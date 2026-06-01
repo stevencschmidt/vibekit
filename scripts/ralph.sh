@@ -72,6 +72,20 @@ CREDS_FILE="$HOME/.claude/.credentials.json"
 RATE_LIMIT_BUFFER=30
 MAX_RATE_LIMIT_WAITS=${MAX_RATE_LIMIT_WAITS:-50}
 
+# Agent-session timeout — bounds every claude/amp invocation so a hung inner
+# session (e.g. an agent running `tail -f`) can be recovered. See DECISION:013.
+# Set RALPH_TASK_TIMEOUT=0 in the environment or vibekit.config.sh to disable.
+: "${RALPH_TASK_TIMEOUT:=1800}"   # seconds before a hung agent session is killed (0 disables)
+: "${RALPH_KILL_GRACE:=30}"       # grace period before timeout escalates to SIGKILL
+
+# Builds the `timeout -k <grace> <secs>` prefix as an array, or empty if disabled
+# or if the coreutils `timeout` binary is not available (e.g. some minimal shells).
+ralph_timeout_prefix() {
+  if [[ "${RALPH_TASK_TIMEOUT:-1800}" -gt 0 ]] && command -v timeout >/dev/null 2>&1; then
+    printf '%s\n' timeout "-k" "${RALPH_KILL_GRACE:-30}" "${RALPH_TASK_TIMEOUT:-1800}"
+  fi
+}
+
 # Resolve python interpreter (Windows uses 'python', not 'python3')
 if command -v python3 &>/dev/null && python3 -c "" 2>/dev/null; then
   PYTHON="python3"
@@ -635,17 +649,28 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
 
     _QC_RUN_PROMPT="Read $_QC_PROMPT and review the project against $_BRIEF_FILE."
     _TMPOUT=$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ralph_qc_$$")
+    mapfile -t _TO < <(ralph_timeout_prefix)
     if [[ "$TOOL" == "claude" ]]; then
-      claude --dangerously-skip-permissions --print \
+      "${_TO[@]}" claude --dangerously-skip-permissions --print \
         --model "${MODEL_QC:-$MODEL}" \
         "$_QC_RUN_PROMPT" \
-        2>&1 | tee "$_TMPOUT" || true
+        2>&1 | tee "$_TMPOUT"
+      _QC_RC=${PIPESTATUS[0]}
     else
       echo "$_QC_RUN_PROMPT" \
-        | amp --dangerously-allow-all 2>&1 | tee "$_TMPOUT" || true
+        | "${_TO[@]}" amp --dangerously-allow-all 2>&1 | tee "$_TMPOUT"
+      _QC_RC=${PIPESTATUS[1]}
     fi
     QC_OUTPUT=$(cat "$_TMPOUT" 2>/dev/null || echo "")
     rm -f "$_TMPOUT" 2>/dev/null || true
+
+    # Final-QC timeout: log and retry — MAX_QC_ROUNDS bounds re-entry.
+    if [[ "${RALPH_TASK_TIMEOUT:-1800}" -gt 0 && \
+          ( "${_QC_RC:-0}" -eq 124 || "${_QC_RC:-0}" -eq 137 ) ]]; then
+      echo "  ⏱ QC round $QC_ROUND exceeded ${RALPH_TASK_TIMEOUT}s — retrying"
+      echo "[$ITERATION] TIMEOUT QC round=$QC_ROUND (rc=$_QC_RC): $(date)" >> "$LOG_FILE"
+      continue
+    fi
 
     if is_rate_limited_output "$QC_OUTPUT"; then
       RATE_LIMIT_WAITS=$((RATE_LIMIT_WAITS + 1))
@@ -775,18 +800,37 @@ except Exception: pass
 
   # --- Run Claude Code or Amp ---
   # Use temp file instead of tee /dev/stderr — more reliable on Windows/Git Bash.
+  # Capture the agent's real exit code via ${PIPESTATUS[N]} — a bare $? would
+  # return tee's status. Wrap in `ralph_timeout_prefix` so a hung agent session
+  # cannot block the loop; recovery only fires after the agent returns.
   _TMPOUT=$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ralph_out_$$")
+  mapfile -t _TO < <(ralph_timeout_prefix)
   if [[ "$TOOL" == "claude" ]]; then
-    claude --dangerously-skip-permissions --print \
+    # Pipeline: timeout claude | tee — PIPESTATUS[0] is the timeout-wrapped agent.
+    "${_TO[@]}" claude --dangerously-skip-permissions --print \
       --model "$_ITER_MODEL" \
       "$_TASK_PROMPT" \
-      2>&1 | tee "$_TMPOUT" || true
+      2>&1 | tee "$_TMPOUT"
+    _AGENT_RC=${PIPESTATUS[0]}
   else
+    # Pipeline: echo | timeout amp | tee — PIPESTATUS[1] is the timeout-wrapped agent.
     echo "$_TASK_PROMPT" \
-      | amp --dangerously-allow-all 2>&1 | tee "$_TMPOUT" || true
+      | "${_TO[@]}" amp --dangerously-allow-all 2>&1 | tee "$_TMPOUT"
+    _AGENT_RC=${PIPESTATUS[1]}
   fi
   OUTPUT=$(cat "$_TMPOUT" 2>/dev/null || echo "")
   rm -f "$_TMPOUT" 2>/dev/null || true
+
+  # --- Timeout → Stall Classification ---
+  # `timeout` exits 124 on SIGTERM, 137 on SIGKILL after the grace period. Force a
+  # no-sentinel marker so the existing stall branch rolls back and counts the strike.
+  # Must run BEFORE is_rate_limited_output so a timeout isn't misclassified.
+  if [[ "${RALPH_TASK_TIMEOUT:-1800}" -gt 0 && \
+        ( "${_AGENT_RC:-0}" -eq 124 || "${_AGENT_RC:-0}" -eq 137 ) ]]; then
+    echo "  ⏱ $TASK_ID exceeded ${RALPH_TASK_TIMEOUT}s — agent killed (treating as stall)"
+    echo "[$ITERATION] TIMEOUT on $TASK_ID after ${RALPH_TASK_TIMEOUT}s (rc=$_AGENT_RC): $(date)" >> "$LOG_FILE"
+    OUTPUT="[RALPH_TIMEOUT]"
+  fi
 
   # --- Rate Limit Check (from output) ---
   if is_rate_limited_output "$OUTPUT"; then
@@ -1003,18 +1047,27 @@ print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
             fi
             _CKPT_RUN_PROMPT="Read $_CKPT_QC_PROMPT and review the project against $_CKPT_BRIEF_FILE."
             _TMPOUT=$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ralph_ckpt_$$")
+            mapfile -t _TO < <(ralph_timeout_prefix)
             if [[ "$TOOL" == "claude" ]]; then
-              claude --dangerously-skip-permissions --print \
+              "${_TO[@]}" claude --dangerously-skip-permissions --print \
                 --model "${MODEL_QC:-$MODEL}" "$_CKPT_RUN_PROMPT" \
-                2>&1 | tee "$_TMPOUT" || true
+                2>&1 | tee "$_TMPOUT"
+              _CKPT_RC=${PIPESTATUS[0]}
             else
               echo "$_CKPT_RUN_PROMPT" \
-                | amp --dangerously-allow-all 2>&1 | tee "$_TMPOUT" || true
+                | "${_TO[@]}" amp --dangerously-allow-all 2>&1 | tee "$_TMPOUT"
+              _CKPT_RC=${PIPESTATUS[1]}
             fi
             CKPT_OUTPUT=$(cat "$_TMPOUT" 2>/dev/null || echo "")
             rm -f "$_TMPOUT" 2>/dev/null || true
 
-            if is_rate_limited_output "$CKPT_OUTPUT"; then
+            # Checkpoint-QC timeout: best-effort — log, reset counter, fall through.
+            if [[ "${RALPH_TASK_TIMEOUT:-1800}" -gt 0 && \
+                  ( "${_CKPT_RC:-0}" -eq 124 || "${_CKPT_RC:-0}" -eq 137 ) ]]; then
+              echo "  ⏱ Checkpoint QC $CHECKPOINT_QC_ROUND exceeded ${RALPH_TASK_TIMEOUT}s — skipping"
+              echo "[$ITERATION] TIMEOUT QC_CHECKPOINT n=$CHECKPOINT_QC_ROUND (rc=$_CKPT_RC): $(date)" >> "$LOG_FILE"
+              TASKS_SINCE_CHECKPOINT=0
+            elif is_rate_limited_output "$CKPT_OUTPUT"; then
               RATE_LIMIT_WAITS=$((RATE_LIMIT_WAITS + 1))
               if [[ $RATE_LIMIT_WAITS -ge $MAX_RATE_LIMIT_WAITS ]]; then
                 echo "STOPPED: Hit rate limit $MAX_RATE_LIMIT_WAITS consecutive times."
