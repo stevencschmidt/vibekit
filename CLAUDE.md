@@ -43,7 +43,6 @@ When asked to build, fix, investigate, or debug anything non-trivial:
 ## Quick Facts
 
 - **Run Ralph:** `bash scripts/ralph.sh [--tool claude|amp] [--model MODEL] [--max N] [--skip-qc] [--dry-run]`
-- **Rate-limit auto-resume:** `bash scripts/ralph-supervisor.sh [--max-relaunch N] [ralph.sh args...]`
 - **Checkpoint QC:** `CHECKPOINT_QC_EVERY=N bash scripts/ralph.sh` (default 3; set `0` to disable)
 - **Scaffold a project:** `./init.sh <target-dir> [project-name]`
 - **No build step, no package manager** — bash + python3 + claude CLI
@@ -53,7 +52,7 @@ When asked to build, fix, investigate, or debug anything non-trivial:
 
 ## Decision Log
 
-Total decisions: 014
+Total decisions: 015
 
 Read the last 5 entries from `docs/claude/decisions.md` when making architectural choices.
 
@@ -71,15 +70,7 @@ Read the last 5 entries from `docs/claude/decisions.md` when making architectura
 bash scripts/ralph.sh [--tool claude|amp] [--model MODEL] [--max N] [--skip-qc] [--dry-run]
 ```
 
-Ralph requires `vibekit.config.sh` at project root and `state/sync.json` to exist before running. Dry-run shows the preflight summary and exits without executing. `--skip-qc` bypasses the post-completion QC loop.
-
-For unattended runs that span rate-limit windows, use the supervisor wrapper instead:
-
-```bash
-bash scripts/ralph-supervisor.sh [--max-relaunch N] [ralph.sh args...]
-```
-
-The supervisor relaunches `ralph.sh` automatically on exit 75 (`RALPH_EXIT_RATE_LIMIT`). All other exit codes — 0 (complete), 1 (stall/block/verify-fail), 130 (interrupted) — pass through unchanged. See DECISION:014.
+Ralph requires `vibekit.config.sh` at project root and `state/sync.json` to exist before running. Dry-run shows the preflight summary and exits without executing. `--skip-qc` bypasses the post-completion QC loop. `ralph.sh` auto-resumes across rate-limit windows in-process — no wrapper needed. See DECISION:015.
 
 ## Script Architecture
 

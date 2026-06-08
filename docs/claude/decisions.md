@@ -1,6 +1,6 @@
 # Decision Log
 
-Total decisions: 014
+Total decisions: 015
 
 Append-only audit log. Each entry has an anchor for precise retrieval.
 
@@ -155,11 +155,10 @@ Builds on DECISION:013 (hang recovery) and DECISION:010 (rate-limit detection).
   mixing it into exit 0 or 1). This makes the exit condition machine-readable for wrappers.
   Exit code 75 is gated exclusively to the confirmed rate-limit path — stalls, verify-
   failures, and blocks all continue to use exit 1 so real failures still require human review.
-- **Supervisor wrapper** (`scripts/ralph-supervisor.sh`): relaunches `ralph.sh` automatically
-  on exit 75. All other exit codes pass through unchanged: 0 = spec complete, 1 = failure,
-  130 = interrupted. `--max-relaunch N` caps the loop (default 100). `systemd` handles
-  reboot survival; the supervisor does not need `Restart=always` — the rate-limit window
-  clears within hours, not days.
+- **Supervisor wrapper** (removed by DECISION:015): previously relaunched `ralph.sh`
+  automatically on exit 75. All other exit codes passed through unchanged. `--max-relaunch N`
+  capped the loop (default 100). *(The wrapper was never invoked on the automated launch path;
+  ralph.sh already resumes in-process — see DECISION:015.)*
 - **ralph-prompt.md no-background hardening**: strengthened the no-background-commands rule
   with explicit examples (`tail -f`, `watch`, `npm run dev`, `python -m http.server`) and
   explained the hang/stall consequence so agents understand the "why" and avoid equivalent
@@ -167,3 +166,26 @@ Builds on DECISION:013 (hang recovery) and DECISION:010 (rate-limit detection).
 - Considered but rejected: a blanket `Restart=always` in systemd (masks real failures);
   using exit 1 for rate-limit and having the supervisor scan stderr (fragile text matching
   in supervisor adds a second detection layer that can drift from ralph's own detection).
+
+---
+
+<!-- DECISION:015 | domains: architecture, conventions -->
+## DECISION:015 — Remove supervisor wrapper; ralph.sh auto-resumes in-process
+
+Supersedes the supervisor / distinct-exit-code portion of DECISION:014. The T001
+timeout-vs-ratelimit fix and the T003 no-background hardening from DECISION:014 remain
+in force.
+
+- **Why removed**: the supervisor wrapper script was never invoked on the automated
+  launch path — `/vibeplan` calls `ralph.sh` directly via `nohup ... & disown`. An
+  external wrapper that relaunches on exit 75 only works if it *is* the outer process.
+  Separately, `ralph.sh` already resumes in-process after a rate-limit window clears:
+  it sleeps for the countdown, then loops back to the next task. There is nothing for
+  an external wrapper to recover.
+- **Exit code 75 retained** (`RALPH_EXIT_RATE_LIMIT=75`, `EX_TEMPFAIL`) for
+  machine-readable signaling — a consumer who wraps ralph.sh can still branch on it —
+  but the in-process resume means the supervisor invocation path is unnecessary.
+- Files updated: supervisor wrapper script (deleted by T005),
+  `docs/claude/{architecture,conventions,decisions}.md`, `CLAUDE.md`
+- Considered but rejected: keeping the supervisor as an optional escape hatch (adds
+  dead code maintenance burden; the in-process resume already covers the use case)

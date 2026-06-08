@@ -29,7 +29,7 @@ Autonomous execution loop. Per iteration:
 7. After a successful task, increments `TASKS_SINCE_CHECKPOINT`; fires a checkpoint QC round if `>= CHECKPOINT_QC_EVERY` (default 3) AND ≥2 unchecked tasks remain
 8. When all tasks are `[x]`, fires completion QC; exits on `[QC_COMPLETE]`
 
-Rate limits are detected before timeout exits (timeout codes 124/137 take precedence). On confirmed rate limit, ralph.sh exits `RALPH_EXIT_RATE_LIMIT=75` so wrappers can distinguish a recoverable pause from a real failure. `scripts/ralph-supervisor.sh` relaunches on exit 75; all other exit codes pass through. See DECISION:014.
+Rate limits are detected before timeout exits (timeout codes 124/137 take precedence). On confirmed rate limit, ralph.sh resumes in-process after the rate-limit window clears — no external wrapper needed. Exit code 75 (`RALPH_EXIT_RATE_LIMIT=75`, `EX_TEMPFAIL`) is reserved for machine-readable signaling. See DECISION:015.
 
 Empty `SPEC_TASKS_FILE` in `vibekit.config.sh` produces a clean preflight error (exit 2) with guidance to run `/vibeplan`; this check fires after the preflight summary and before any task execution or `--dry-run` exit.
 

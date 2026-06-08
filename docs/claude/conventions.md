@@ -35,17 +35,9 @@ This mechanism is reconciled with `/vibe_resume`, which uses the same pid-livene
 
 Agent sessions are bounded by `RALPH_TASK_TIMEOUT` (default 1800 seconds; set to `0` to disable). If an agent hangs indefinitely (e.g., running a non-terminating command like `tail -f`), ralph.sh kills it after the timeout and classifies the hang as a stall, reusing the existing 3-strike failure machinery. The agent prompt explicitly forbids non-terminating commands (`tail -f`, `watch`, `npm run dev`, `python -m http.server`, and equivalents) and explains the hang/stall consequence so agents understand the "why". See DECISION:013.
 
-### Rate-Limit Exit Code and Supervisor
+### Rate-Limit Auto-Resume
 
-ralph.sh uses a distinct exit code for recoverable rate-limit exits: `RALPH_EXIT_RATE_LIMIT=75` (`EX_TEMPFAIL`). The timeout check runs before the rate-limit text scan to prevent misclassification (a timed-out agent that printed rate-limit text would otherwise be treated as a rate-limit event instead of a timeout). Exit code 75 is emitted only on the confirmed rate-limit path; stalls, verify-failures, and blocks still exit 1.
-
-`scripts/ralph-supervisor.sh` wraps ralph.sh and relaunches on exit 75 automatically:
-
-```bash
-bash scripts/ralph-supervisor.sh [--max-relaunch N] [ralph.sh args...]
-```
-
-All other exit codes pass through unchanged. Use the supervisor for unattended runs that may span rate-limit windows. See DECISION:014.
+ralph.sh detects rate-limit events and resumes in-process after the rate-limit window clears — no external wrapper needed. The timeout check runs before the rate-limit text scan to prevent misclassification (a timed-out agent that printed rate-limit text would otherwise be treated as a rate-limit event instead of a timeout). Exit code 75 (`RALPH_EXIT_RATE_LIMIT=75`, `EX_TEMPFAIL`) is reserved for machine-readable signaling; stalls, verify-failures, and blocks still exit 1. See DECISION:015.
 
 ## Commit Prefixes
 
