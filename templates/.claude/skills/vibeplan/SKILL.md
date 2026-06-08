@@ -561,6 +561,8 @@ Assign each task a tier:
 - `medium` — standard multi-file feature work (default when unsure)
 - `complex` — core-logic, cross-cutting, or architectural change
 
+**Tier floor:** Any task that runs the full test suite, reconciles docs across multiple files, or spans several files MUST be tagged at least `medium` — never `simple`. The simple/Haiku tier is for mechanical single-file or config changes only.
+
 The tier maps to a model via `MODEL_SIMPLE/MEDIUM/COMPLEX` in `vibekit.config.sh` (Haiku/Sonnet/Opus by default). An untagged task falls back to `medium`.
 
 ### 5. Populate state/sync.json
