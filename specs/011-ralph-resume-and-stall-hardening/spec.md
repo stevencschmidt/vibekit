@@ -14,47 +14,54 @@ See `docs/briefs/011-ralph-resume-and-stall-hardening.md` for the full problem s
 - In all three `timeout` branches of `ralph.sh` (main loop, final QC, checkpoint QC), a
   124/137 exit checks live usage first; if a window is ≥100% it runs `wait_for_reset` and
   continues without counting a stall/strike.
-- The rate-limit-cap exit path uses a distinct exit code (not the generic `1` used by
-  stall/block/verify-fail/max-iter).
-- `scripts/ralph-supervisor.sh` exists: runs `ralph.sh` in a loop, re-launches **only** on
-  the rate-limit exit code (after the reset), and stops on any other non-zero exit.
+- Auto-resume across token-limit windows lives **inside `ralph.sh`** (in-process
+  `wait_for_reset` + the T001 fix) — the one script vibeplan/vibe_resume already launch.
+  There is no separate supervisor/wrapper to choose or remember.
 - `scripts/ralph-prompt.md` forbids backgrounding *any* command and forbids ending a turn
   while a process is still running; the sentinel is emitted only after commands return.
 - `templates/.claude/skills/vibeplan/SKILL.md` instructs the planner to floor "full
   suite"/"docs reconcile"-style tasks at `medium` tier (never `simple`).
-- `init.sh` and `scripts/push-to-phramewerks.sh` both copy `scripts/ralph-supervisor.sh`.
-- Knowledge graph reconciled: `DECISION:014` added; `docs/claude/{conventions.md,
-  architecture.md,manifest.json}` and `CLAUDE.md` updated; the decision-count drift
-  (CLAUDE.md 013 vs decisions.md 012) corrected.
+- Knowledge graph reconciled: `DECISION:014` (the original fix) and `DECISION:015` (the
+  supervisor reversal) recorded; `docs/claude/{conventions.md,architecture.md,
+  manifest.json}` and `CLAUDE.md` carry no supervisor references; the decision count is
+  correct.
 - `verify_build()` passes (`bash -n` on all scripts, JSON valid).
+
+> **Course-correction (T005–T006):** the supervisor wrapper originally shipped in
+> T002/T004 was removed. The automated launch path (`nohup bash scripts/ralph.sh`) never
+> called it, and `ralph.sh` already auto-resumes in-process — so the wrapper was redundant
+> complexity. See DECISION:015.
 
 ## Hard Constraints
 
 - bash + python3 only; no new runtime dependencies.
-- Auto-resume must NOT be systemd-only (supervisor wrapper is the portable primary).
-- Auto-relaunch fires ONLY on the rate-limit exit code — never on stall/block/verify-fail/
-  max-iter (preserves "stalls need human review").
+- One launch path — auto-resume inside `ralph.sh`, no separate wrapper the automated flow
+  would never run.
+- Nothing auto-restarts on stall/block/verify-fail/max-iter (preserves "stalls need
+  human review").
 - No change to the 3-strike machinery or the `/vibe_resume` skill.
 
 ## Out of Scope
 
 - `/vibe_resume` skill changes.
 - phramewerks migration (firewall — separate phramewerks session).
+- A separate supervisor/wrapper process (rejected — DECISION:015).
 
 ## Technical Approach
 
 - **T001** add a small `is_usage_exhausted` helper (reuses `get_usage`/`get_utilization`);
   call it at the top of each timeout branch before the stall classification. On exhaustion:
   `wait_for_reset` + `continue` (decrement `ITERATION` in the main-loop branch to match the
-  existing rate-limit-wait pattern).
-- **T002** define a named constant for the rate-limit-cap exit code (e.g. `75`,
-  EX_TEMPFAIL); use it on all three `RATE_LIMIT_CAP` exits. New `scripts/ralph-supervisor.sh`
-  loops `ralph.sh`, inspects `$?`, re-execs only on `75` (with a `--max-relaunch` guard),
-  exits through any other code. Wire `install-service.sh` `ExecStart` to the supervisor.
-- **T003** markdown edits to `ralph-prompt.md` and the vibeplan SKILL.
-- **T004** docs reconcile + DECISION:014 + manifest + add the new script to init.sh /
-  push-to-phramewerks.sh. Verify scoped to `bash -n` (NOT a full suite — the exact trap
-  that triggered this spec).
+  existing rate-limit-wait pattern). *(kept)*
+- **T002/T004 (superseded)** added a `RALPH_EXIT_RATE_LIMIT=75` code + `ralph-supervisor.sh`
+  + scaffolding/doc references. **Reverted by T005–T006.**
+- **T003** markdown edits to `ralph-prompt.md` and the vibeplan SKILL. *(kept)*
+- **T005** delete `scripts/ralph-supervisor.sh`; revert the `RALPH_EXIT_RATE_LIMIT` exit
+  code back to `exit 1`; revert `install-service.sh`, `init.sh`, and `push-to-phramewerks.sh`
+  to no longer reference the supervisor. Keep T001's `is_usage_exhausted` logic intact.
+- **T006** docs reconcile: add `DECISION:015` (supersedes the supervisor portion of
+  DECISION:014); strip supervisor references from `CLAUDE.md` and `docs/claude/*`; correct
+  the decision count. Verify scoped to `bash -n` + JSON (never a full suite).
 
 ## Verify
 

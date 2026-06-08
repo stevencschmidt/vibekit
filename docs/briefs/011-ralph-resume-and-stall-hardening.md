@@ -18,24 +18,25 @@ Two reliability failures surfaced running phramewerks autonomously.
 2. **Auto-resume after a usage-limit reset is incomplete.** Spec 006 only reduced
    *chat-session* friction (stop monitoring, session-start notice, optional `at`);
    it left process-level auto-resume out of scope and assumed ralph.sh rate-limit
-   handling was correct. Two gaps remain:
-   - **Scenario A (ralph exited):** the in-process `wait_for_reset` countdown only
-     resumes while ralph stays alive. `install-service.sh` uses `Restart=no` by
-     design. If the process dies during the multi-hour sleep (terminal/SSH closed,
-     machine sleep) nothing relaunches it after the window resets.
-   - **Scenario B (alive but hung):** a timeout-vs-ratelimit ordering bug
-     introduced by DECISION:013. At ralph.sh ~828 a timed-out agent (rc 124/137)
-     sets `OUTPUT="[RALPH_TIMEOUT]"` **before** `is_rate_limited_output` runs, so a
-     claude session that hangs *because it is rate-limited* is counted as a stall
-     and exits instead of waiting for reset. Same pattern in the final-QC (~668)
-     and checkpoint-QC (~1065) timeout branches.
+   handling was correct. The actual gap was a timeout-vs-ratelimit ordering bug
+   introduced by DECISION:013: at ralph.sh ~828 a timed-out agent (rc 124/137)
+   sets `OUTPUT="[RALPH_TIMEOUT]"` **before** `is_rate_limited_output` runs, so a
+   claude session that hangs *because it is rate-limited* is counted as a stall
+   and exits instead of waiting for reset. Same pattern in the final-QC (~668)
+   and checkpoint-QC (~1065) timeout branches.
+
+   `ralph.sh` already auto-resumes across token-limit windows on its own: its
+   in-process `wait_for_reset` reads the reset time from the usage API, sleeps,
+   and continues the loop. No second process is needed. (Reboot survival, the only
+   case a single script cannot self-handle, is covered by the existing
+   `install-service.sh` systemd unit.)
 
 ## Goal
 
 - A rate-limited hang is never misclassified as a stall.
-- Ralph can resume automatically after a usage-limit reset even when the process
-  fully exits — without auto-restarting on real stalls/blocks/verify-failures
-  (those still require human review).
+- `ralph.sh` — the one script the skills launch — keeps auto-resuming after a
+  usage-limit reset, in-process, with no separate supervisor to choose between.
+- Real stalls/blocks/verify-failures still stop and require human review.
 - Agents never strand a turn waiting on a backgrounded long-running command.
 
 ## Constraints
@@ -43,13 +44,14 @@ Two reliability failures surfaced running phramewerks autonomously.
 - vibekit source only (FIREWALL: never run git in phramewerks). Sync back via
   `scripts/push-to-phramewerks.sh` after completion.
 - bash + python3 only — no new runtime dependencies.
-- Cross-platform (WSL / Git Bash / macOS) — the auto-resume mechanism must not be
-  systemd-only.
-- Preserve the "stalls need review" intent: auto-relaunch fires ONLY on the
-  rate-limit exit path, never on stall/block/verify-fail/max-iter.
+- One launch path: auto-resume lives inside `ralph.sh` (what vibeplan/vibe_resume
+  already launch). No separate wrapper script the automated flow would never call.
+- Preserve the "stalls need review" intent: nothing auto-restarts on
+  stall/block/verify-fail/max-iter.
 
 ## Out of scope
 
 - Changes to the `/vibe_resume` skill.
 - Migrating phramewerks (done in a phramewerks session).
 - Re-architecting the 3-strike machinery.
+- A separate supervisor/wrapper process (rejected — see DECISION:015).
