@@ -40,10 +40,14 @@ copy_file "scripts/sync-helpers.sh" "scripts/sync-helpers.sh"
 copy_file "scripts/monitor.sh"      "scripts/monitor.sh"
 copy_file "scripts/ralph-prompt.md" "scripts/ralph-prompt.md"
 copy_file "scripts/qc-prompt.md"    "scripts/qc-prompt.md"
-copy_file "scripts/sync-agent.sh"   "scripts/sync-agent.sh"
+copy_file "scripts/sync-agent.sh"         "scripts/sync-agent.sh"
+copy_file "scripts/ralph-supervisor.sh"   "scripts/ralph-supervisor.sh"
+copy_file "scripts/install-service.sh"    "scripts/install-service.sh"
 
 chmod +x "$PHRAMEWERKS_DIR/scripts/ralph.sh"
 chmod +x "$PHRAMEWERKS_DIR/scripts/sync-agent.sh"
+chmod +x "$PHRAMEWERKS_DIR/scripts/ralph-supervisor.sh"
+chmod +x "$PHRAMEWERKS_DIR/scripts/install-service.sh"
 
 # .claude/skills/ — mirrors init.sh section 3 (skills portion, from templates/)
 copy_file "templates/.claude/skills/vibeplan/SKILL.md"             ".claude/skills/vibeplan/SKILL.md"

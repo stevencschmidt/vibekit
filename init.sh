@@ -75,9 +75,11 @@ cp "$VIBEKIT_DIR/scripts/sync-helpers.sh"  "$TARGET_DIR/scripts/sync-helpers.sh"
 cp "$VIBEKIT_DIR/scripts/monitor.sh"       "$TARGET_DIR/scripts/monitor.sh"
 cp "$VIBEKIT_DIR/scripts/ralph-prompt.md"  "$TARGET_DIR/scripts/ralph-prompt.md"
 cp "$VIBEKIT_DIR/scripts/qc-prompt.md"     "$TARGET_DIR/scripts/qc-prompt.md"
-cp "$VIBEKIT_DIR/scripts/sync-agent.sh"    "$TARGET_DIR/scripts/sync-agent.sh"
+cp "$VIBEKIT_DIR/scripts/sync-agent.sh"         "$TARGET_DIR/scripts/sync-agent.sh"
+cp "$VIBEKIT_DIR/scripts/ralph-supervisor.sh"   "$TARGET_DIR/scripts/ralph-supervisor.sh"
 chmod +x "$TARGET_DIR/scripts/ralph.sh"
 chmod +x "$TARGET_DIR/scripts/sync-agent.sh"
+chmod +x "$TARGET_DIR/scripts/ralph-supervisor.sh"
 
 # === 3. Copy and substitute templates ===
 echo "Copying templates..."

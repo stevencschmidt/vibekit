@@ -1,6 +1,6 @@
 # Decision Log
 
-Total decisions: 012
+Total decisions: 014
 
 Append-only audit log. Each entry has an anchor for precise retrieval.
 
@@ -138,3 +138,32 @@ Append-only audit log. Each entry has an anchor for precise retrieval.
   returned, so nothing fired. Bounding the session makes every hang recoverable.
 - Considered but rejected: per-tool-call timeouts (not reachable from the loop); `flock`-style
   watchdog process (heavier, less portable than coreutils `timeout`).
+
+---
+
+<!-- DECISION:014 | domains: architecture, conventions -->
+## DECISION:014 — Timeout-vs-ratelimit disambiguation, distinct exit code, and supervisor wrapper
+
+Builds on DECISION:013 (hang recovery) and DECISION:010 (rate-limit detection).
+
+- **Timeout-vs-ratelimit fix**: `ralph.sh` previously classified a claude `timeout` exit
+  (124/137) as a rate-limit event when the output contained rate-limit text — the timeout
+  check ran *after* the rate-limit text scan. Re-ordered so timeout exit codes are tested
+  first; rate-limit text scan only runs when the exit code is not a timeout code.
+- **Distinct rate-limit exit code**: `ralph.sh` now exits with `RALPH_EXIT_RATE_LIMIT=75`
+  (`EX_TEMPFAIL`) when a rate-limit is detected and the run must be deferred (rather than
+  mixing it into exit 0 or 1). This makes the exit condition machine-readable for wrappers.
+  Exit code 75 is gated exclusively to the confirmed rate-limit path — stalls, verify-
+  failures, and blocks all continue to use exit 1 so real failures still require human review.
+- **Supervisor wrapper** (`scripts/ralph-supervisor.sh`): relaunches `ralph.sh` automatically
+  on exit 75. All other exit codes pass through unchanged: 0 = spec complete, 1 = failure,
+  130 = interrupted. `--max-relaunch N` caps the loop (default 100). `systemd` handles
+  reboot survival; the supervisor does not need `Restart=always` — the rate-limit window
+  clears within hours, not days.
+- **ralph-prompt.md no-background hardening**: strengthened the no-background-commands rule
+  with explicit examples (`tail -f`, `watch`, `npm run dev`, `python -m http.server`) and
+  explained the hang/stall consequence so agents understand the "why" and avoid equivalent
+  commands not on the list.
+- Considered but rejected: a blanket `Restart=always` in systemd (masks real failures);
+  using exit 1 for rate-limit and having the supervisor scan stderr (fragile text matching
+  in supervisor adds a second detection layer that can drift from ralph's own detection).

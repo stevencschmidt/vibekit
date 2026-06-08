@@ -73,3 +73,30 @@ gate is the only auto-relaunch mechanism.
 
 ---
 
+## T003 · Harden ralph-prompt.md no-background rule + vibeplan tier-floor
+Depends on: T002
+Verify: `grep -qi 'foreground' scripts/ralph-prompt.md && grep -qi 'tier' templates/.claude/skills/vibeplan/SKILL.md`
+Relevant: docs/claude/conventions.md, scripts/ralph-prompt.md
+Tier: simple
+
+Root cause of the original stall: the agent backgrounded a long command (full test
+suite) and ended its turn waiting, never emitting the sentinel.
+
+1. In scripts/ralph-prompt.md, strengthen the existing rule (~line 26). Make
+   explicit: never background ANY command (no trailing `&`, no `nohup`/`disown`, no
+   "run in background" tool invocations); run every command synchronously in the
+   foreground and wait for it to fully return before continuing; NEVER end the turn
+   while a process is still running or "in progress"; emit the completion sentinel
+   ONLY after all commands have returned and work is committed. Add a one-line
+   reminder that a turn ending with "waiting for X to complete" and no sentinel is
+   counted as a stall and wastes an attempt.
+2. In templates/.claude/skills/vibeplan/SKILL.md tier-assignment section (~559),
+   add a tier-floor note: any task that runs the full test suite, reconciles docs
+   across multiple files, or otherwise spans several files MUST be tagged at least
+   `medium` — never `simple`. The simple/Haiku tier is for mechanical single-file or
+   config changes only.
+
+Markdown edits only. Do not touch ralph.sh.
+
+---
+
