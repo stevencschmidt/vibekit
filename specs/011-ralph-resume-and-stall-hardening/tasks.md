@@ -1,6 +1,6 @@
 # Tasks: 011-ralph-resume-and-stall-hardening
 
-- [ ] T001 · Fix timeout-vs-ratelimit misclassification in ralph.sh
+- [x] T001 · Fix timeout-vs-ratelimit misclassification in ralph.sh
 - [ ] T002 · Distinct rate-limit exit code + ralph-supervisor.sh auto-resume
 - [ ] T003 · Harden ralph-prompt.md no-background rule + vibeplan tier-floor
 - [ ] T004 · Docs reconcile + DECISION:014 + manifest + ship new script

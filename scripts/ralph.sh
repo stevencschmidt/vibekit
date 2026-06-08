@@ -281,6 +281,27 @@ is_rate_limited_output() {
   return 1
 }
 
+# === Usage Exhaustion Check ===
+# Returns 0 (exhausted) if the live OAuth usage API reports either window at
+# >=100% utilization. Returns non-zero (not exhausted) when usage data is
+# unavailable, so a genuine hang with no usage signal still counts as a stall.
+# Used to disambiguate timeout-vs-ratelimit when the timeout wrapper kills a
+# session: a hang caused by rate-limiting must not burn the 3-strike stall
+# counter. See DECISION:014.
+is_usage_exhausted() {
+  local usage
+  usage=$(get_usage)
+  [[ -z "$usage" ]] && return 1
+
+  local five_util seven_util
+  five_util=$(get_utilization  "$usage" "five_hour")
+  seven_util=$(get_utilization "$usage" "seven_day")
+
+  if $PYTHON -c "import sys; sys.exit(0 if float('${five_util}') >= 100 else 1)" 2>/dev/null; then return 0; fi
+  if $PYTHON -c "import sys; sys.exit(0 if float('${seven_util}') >= 100 else 1)" 2>/dev/null; then return 0; fi
+  return 1
+}
+
 # === Wait for Rate Limit Reset ===
 wait_for_reset() {
   local task_id="$1"
@@ -664,9 +685,17 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
     QC_OUTPUT=$(cat "$_TMPOUT" 2>/dev/null || echo "")
     rm -f "$_TMPOUT" 2>/dev/null || true
 
-    # Final-QC timeout: log and retry — MAX_QC_ROUNDS bounds re-entry.
+    # Final-QC timeout: if usage exhausted, wait for reset (DECISION:014); otherwise
+    # log and retry — MAX_QC_ROUNDS bounds re-entry.
     if [[ "${RALPH_TASK_TIMEOUT:-1800}" -gt 0 && \
           ( "${_QC_RC:-0}" -eq 124 || "${_QC_RC:-0}" -eq 137 ) ]]; then
+      if is_usage_exhausted; then
+        echo "  ⏱ QC round $QC_ROUND timed out while usage exhausted — treating as rate-limit"
+        echo "[$ITERATION] TIMEOUT-RATELIMIT QC round=$QC_ROUND (rc=$_QC_RC): $(date)" >> "$LOG_FILE"
+        wait_for_reset "QC-$QC_ROUND" "timeout-ratelimit"
+        ITERATION=$((ITERATION - 1))
+        continue
+      fi
       echo "  ⏱ QC round $QC_ROUND exceeded ${RALPH_TASK_TIMEOUT}s — retrying"
       echo "[$ITERATION] TIMEOUT QC round=$QC_ROUND (rc=$_QC_RC): $(date)" >> "$LOG_FILE"
       continue
@@ -825,8 +854,17 @@ except Exception: pass
   # `timeout` exits 124 on SIGTERM, 137 on SIGKILL after the grace period. Force a
   # no-sentinel marker so the existing stall branch rolls back and counts the strike.
   # Must run BEFORE is_rate_limited_output so a timeout isn't misclassified.
+  # First disambiguate: a hang caused by usage exhaustion must wait for reset, not
+  # burn the stall counter (DECISION:014).
   if [[ "${RALPH_TASK_TIMEOUT:-1800}" -gt 0 && \
         ( "${_AGENT_RC:-0}" -eq 124 || "${_AGENT_RC:-0}" -eq 137 ) ]]; then
+    if is_usage_exhausted; then
+      echo "  ⏱ $TASK_ID timed out while usage exhausted — treating as rate-limit"
+      echo "[$ITERATION] TIMEOUT-RATELIMIT on $TASK_ID after ${RALPH_TASK_TIMEOUT}s (rc=$_AGENT_RC): $(date)" >> "$LOG_FILE"
+      wait_for_reset "$TASK_ID" "timeout-ratelimit"
+      ITERATION=$((ITERATION - 1))
+      continue
+    fi
     echo "  ⏱ $TASK_ID exceeded ${RALPH_TASK_TIMEOUT}s — agent killed (treating as stall)"
     echo "[$ITERATION] TIMEOUT on $TASK_ID after ${RALPH_TASK_TIMEOUT}s (rc=$_AGENT_RC): $(date)" >> "$LOG_FILE"
     OUTPUT="[RALPH_TIMEOUT]"
@@ -1061,13 +1099,25 @@ print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
             CKPT_OUTPUT=$(cat "$_TMPOUT" 2>/dev/null || echo "")
             rm -f "$_TMPOUT" 2>/dev/null || true
 
-            # Checkpoint-QC timeout: best-effort — log, reset counter, fall through.
+            # Checkpoint-QC timeout vs rate-limit disambiguation (DECISION:014):
+            # If a timeout fires while usage is exhausted, fall through to the existing
+            # rate-limit branch (wait, don't reset counter). Only a genuine timeout —
+            # with no usage-exhaustion signal — is treated as a best-effort skip.
+            _CKPT_TIMEOUT=0
+            _CKPT_TREAT_AS_LIMIT=0
             if [[ "${RALPH_TASK_TIMEOUT:-1800}" -gt 0 && \
                   ( "${_CKPT_RC:-0}" -eq 124 || "${_CKPT_RC:-0}" -eq 137 ) ]]; then
+              _CKPT_TIMEOUT=1
+              if is_usage_exhausted; then
+                _CKPT_TREAT_AS_LIMIT=1
+                echo "[$ITERATION] TIMEOUT-RATELIMIT QC_CHECKPOINT n=$CHECKPOINT_QC_ROUND (rc=$_CKPT_RC): $(date)" >> "$LOG_FILE"
+              fi
+            fi
+            if [[ $_CKPT_TIMEOUT -eq 1 && $_CKPT_TREAT_AS_LIMIT -eq 0 ]]; then
               echo "  ⏱ Checkpoint QC $CHECKPOINT_QC_ROUND exceeded ${RALPH_TASK_TIMEOUT}s — skipping"
               echo "[$ITERATION] TIMEOUT QC_CHECKPOINT n=$CHECKPOINT_QC_ROUND (rc=$_CKPT_RC): $(date)" >> "$LOG_FILE"
               TASKS_SINCE_CHECKPOINT=0
-            elif is_rate_limited_output "$CKPT_OUTPUT"; then
+            elif [[ $_CKPT_TREAT_AS_LIMIT -eq 1 ]] || is_rate_limited_output "$CKPT_OUTPUT"; then
               RATE_LIMIT_WAITS=$((RATE_LIMIT_WAITS + 1))
               if [[ $RATE_LIMIT_WAITS -ge $MAX_RATE_LIMIT_WAITS ]]; then
                 echo "STOPPED: Hit rate limit $MAX_RATE_LIMIT_WAITS consecutive times."
