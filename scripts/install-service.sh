@@ -26,9 +26,10 @@ After=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=$PROJECT_ROOT
-ExecStart=/bin/bash $PROJECT_ROOT/scripts/ralph.sh
-# Restart=no is intentional: reboot survival only, not auto-recovery from failures.
-# Stalls and real failures stop the service and require human review.
+ExecStart=/bin/bash $PROJECT_ROOT/scripts/ralph-supervisor.sh
+# Restart=no is intentional: reboot survival only; the supervisor handles rate-limit
+# auto-resume (exit 75/EX_TEMPFAIL), while systemd handles reboot survival. Stalls
+# and real failures (exit 1) stop the service and require human review. See DECISION:014.
 Restart=no
 StandardOutput=append:$PROJECT_ROOT/state/ralph.log
 StandardError=inherit

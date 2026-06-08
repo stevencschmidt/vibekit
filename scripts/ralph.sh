@@ -71,6 +71,9 @@ run_all_verifications() {
 CREDS_FILE="$HOME/.claude/.credentials.json"
 RATE_LIMIT_BUFFER=30
 MAX_RATE_LIMIT_WAITS=${MAX_RATE_LIMIT_WAITS:-50}
+# EX_TEMPFAIL (75): rate-limit cap is temporary — supervisor can auto-relaunch on this code.
+# All other failure exits stay at 1 so they require human review. See DECISION:014.
+RALPH_EXIT_RATE_LIMIT=75
 
 # Agent-session timeout — bounds every claude/amp invocation so a hung inner
 # session (e.g. an agent running `tail -f`) can be recovered. See DECISION:013.
@@ -661,7 +664,7 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
         echo "STOPPED: Hit rate limit $MAX_RATE_LIMIT_WAITS consecutive times."
         notify_exit "RATE_LIMIT_CAP" "ralph hit $MAX_RATE_LIMIT_WAITS consecutive rate-limit waits"
         echo "=== Stopped: rate limit wait cap ($MAX_RATE_LIMIT_WAITS) at $(date) ===" >> "$LOG_FILE"
-        exit 1
+        exit $RALPH_EXIT_RATE_LIMIT
       fi
       wait_for_reset "QC-$QC_ROUND" "pre-check"
       ITERATION=$((ITERATION - 1))
@@ -707,7 +710,7 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
         echo "STOPPED: Hit rate limit $MAX_RATE_LIMIT_WAITS consecutive times."
         notify_exit "RATE_LIMIT_CAP" "ralph hit $MAX_RATE_LIMIT_WAITS consecutive rate-limit waits"
         echo "=== Stopped: rate limit wait cap ($MAX_RATE_LIMIT_WAITS) at $(date) ===" >> "$LOG_FILE"
-        exit 1
+        exit $RALPH_EXIT_RATE_LIMIT
       fi
       wait_for_reset "QC-$QC_ROUND" "mid-execution"
       ITERATION=$((ITERATION - 1))
@@ -774,7 +777,7 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
       echo "Check your Claude Pro plan status."
       notify_exit "RATE_LIMIT_CAP" "ralph hit $MAX_RATE_LIMIT_WAITS consecutive rate-limit waits"
       echo "=== Stopped: rate limit wait cap ($MAX_RATE_LIMIT_WAITS) at $(date) ===" >> "$LOG_FILE"
-      exit 1
+      exit $RALPH_EXIT_RATE_LIMIT
     fi
     wait_for_reset "$TASK_ID" "pre-check"
     ITERATION=$((ITERATION - 1))
@@ -879,7 +882,7 @@ except Exception: pass
       echo "Check your Claude Pro plan status."
       notify_exit "RATE_LIMIT_CAP" "ralph hit $MAX_RATE_LIMIT_WAITS consecutive rate-limit waits"
       echo "=== Stopped: rate limit wait cap ($MAX_RATE_LIMIT_WAITS) at $(date) ===" >> "$LOG_FILE"
-      exit 1
+      exit $RALPH_EXIT_RATE_LIMIT
     fi
     wait_for_reset "$TASK_ID" "mid-execution"
     ITERATION=$((ITERATION - 1))
@@ -1079,7 +1082,7 @@ print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
                 echo "STOPPED: Hit rate limit $MAX_RATE_LIMIT_WAITS consecutive times."
                 notify_exit "RATE_LIMIT_CAP" "ralph hit $MAX_RATE_LIMIT_WAITS consecutive rate-limit waits"
                 echo "=== Stopped: rate limit wait cap ($MAX_RATE_LIMIT_WAITS) at $(date) ===" >> "$LOG_FILE"
-                exit 1
+                exit $RALPH_EXIT_RATE_LIMIT
               fi
               wait_for_reset "CKPT-$CHECKPOINT_QC_ROUND" "pre-check"
             fi
@@ -1123,7 +1126,7 @@ print(len(re.findall(r'^- \[ \] T[0-9]+', content, re.MULTILINE)))
                 echo "STOPPED: Hit rate limit $MAX_RATE_LIMIT_WAITS consecutive times."
                 notify_exit "RATE_LIMIT_CAP" "ralph hit $MAX_RATE_LIMIT_WAITS consecutive rate-limit waits"
                 echo "=== Stopped: rate limit wait cap ($MAX_RATE_LIMIT_WAITS) at $(date) ===" >> "$LOG_FILE"
-                exit 1
+                exit $RALPH_EXIT_RATE_LIMIT
               fi
               wait_for_reset "CKPT-$CHECKPOINT_QC_ROUND" "mid-execution"
               echo "[CKPT-$CHECKPOINT_QC_ROUND] Rate limited — counter not reset; will retry after next task: $(date)" >> "$LOG_FILE"

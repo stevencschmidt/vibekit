@@ -1,44 +1,9 @@
 # Tasks: 011-ralph-resume-and-stall-hardening
 
 - [x] T001 · Fix timeout-vs-ratelimit misclassification in ralph.sh
-- [ ] T002 · Distinct rate-limit exit code + ralph-supervisor.sh auto-resume
+- [x] T002 · Distinct rate-limit exit code + ralph-supervisor.sh auto-resume
 - [ ] T003 · Harden ralph-prompt.md no-background rule + vibeplan tier-floor
 - [ ] T004 · Docs reconcile + DECISION:014 + manifest + ship new script
-
----
-
-## T001 · Fix timeout-vs-ratelimit misclassification in ralph.sh
-Depends on: —
-Verify: `bash -n scripts/ralph.sh && grep -q 'is_usage_exhausted' scripts/ralph.sh`
-Relevant: docs/claude/architecture.md, docs/claude/conventions.md, scripts/ralph.sh
-Tier: complex
-
-A claude/amp session that HANGS because it is rate-limited gets killed by the
-`timeout` wrapper (exit 124/137) and is then misclassified as a stall, because the
-timeout→stall classification runs BEFORE `is_rate_limited_output`. This burns the
-3-strike counter and exits instead of waiting for the reset.
-
-Fix:
-1. Add a small helper near `is_rate_limited_output` (scripts/ralph.sh ~266):
-   `is_usage_exhausted()` — returns 0 when the live OAuth usage API reports any
-   window (`five_hour` or `seven_day`) at ≥100% utilization. Reuse the existing
-   `get_usage` and `get_utilization` helpers and the python float-compare pattern
-   already used in `check_usage_before_iteration`. Return non-zero (not exhausted)
-   when usage is unavailable, so a genuine hang with no usage signal still counts
-   as a stall.
-2. In the **main-loop** timeout branch (scripts/ralph.sh ~828, the block that sets
-   `OUTPUT="[RALPH_TIMEOUT]"`): before forcing the stall marker, call
-   `is_usage_exhausted`. If exhausted, log it, run `wait_for_reset "$TASK_ID"
-   "timeout-ratelimit"`, do `ITERATION=$((ITERATION - 1))` and `continue` — matching
-   the existing mid-execution rate-limit-wait pattern. Only fall through to the
-   `OUTPUT="[RALPH_TIMEOUT]"` stall marker when NOT exhausted.
-3. Apply the same guard to the **final-QC** timeout branch (~668) and the
-   **checkpoint-QC** timeout branch (~1065): on 124/137, if `is_usage_exhausted`,
-   run `wait_for_reset` and `continue` (final-QC) / fall through to the existing
-   rate-limit handling (checkpoint) instead of treating the timeout as a skip/retry.
-
-Do not change the `RALPH_TASK_TIMEOUT` default or the 3-strike machinery. Do not
-refactor surrounding code.
 
 ---
 
