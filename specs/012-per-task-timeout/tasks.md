@@ -1,6 +1,6 @@
 # Tasks: 012-per-task-timeout
 
-- [ ] T001 · Per-task Timeout override in ralph.sh
+- [x] T001 · Per-task Timeout override in ralph.sh
 - [ ] T002 · vibeplan fast-verify rule for docs tasks + document Timeout
 - [ ] T003 · Docs reconcile + DECISION:016 + manifest + sync.json schema
 

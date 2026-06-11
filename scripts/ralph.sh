@@ -80,9 +80,11 @@ MAX_RATE_LIMIT_WAITS=${MAX_RATE_LIMIT_WAITS:-50}
 
 # Builds the `timeout -k <grace> <secs>` prefix as an array, or empty if disabled
 # or if the coreutils `timeout` binary is not available (e.g. some minimal shells).
+# Optional first arg overrides the global default (per-task Timeout: line).
 ralph_timeout_prefix() {
-  if [[ "${RALPH_TASK_TIMEOUT:-1800}" -gt 0 ]] && command -v timeout >/dev/null 2>&1; then
-    printf '%s\n' timeout "-k" "${RALPH_KILL_GRACE:-30}" "${RALPH_TASK_TIMEOUT:-1800}"
+  local secs="${1:-${RALPH_TASK_TIMEOUT:-1800}}"
+  if [[ "$secs" =~ ^[0-9]+$ && "$secs" -gt 0 ]] && command -v timeout >/dev/null 2>&1; then
+    printf '%s\n' timeout "-k" "${RALPH_KILL_GRACE:-30}" "$secs"
   fi
 }
 
@@ -624,6 +626,15 @@ while [[ $ITERATION -lt $MAX_ITERATIONS ]]; do
   TASK_TIER=$(sync_read "ralph.tier" 2>/dev/null || echo "medium")
   [[ -z "$TASK_TIER" || "$TASK_TIER" == "null" ]] && TASK_TIER="medium"
 
+  # Per-task agent-session timeout. Treat empty/null/non-numeric as "use the
+  # global default"; a literal 0 disables the watchdog for this task only.
+  TASK_TIMEOUT=$(sync_read "ralph.task_timeout" 2>/dev/null || echo "")
+  if [[ "$TASK_TIMEOUT" =~ ^[0-9]+$ ]]; then
+    _ITER_TIMEOUT="$TASK_TIMEOUT"
+  else
+    _ITER_TIMEOUT="${RALPH_TASK_TIMEOUT:-1800}"
+  fi
+
   if [[ -z "$TASK_ID" || "$TASK_ID" == "null" ]]; then
     # All scheduled tasks complete — enter QC loop if enabled
     _QC_PROMPT="${QC_PROMPT:-$PROJECT_ROOT/scripts/qc-prompt.md}"
@@ -833,7 +844,7 @@ except Exception: pass
   # return tee's status. Wrap in `ralph_timeout_prefix` so a hung agent session
   # cannot block the loop; recovery only fires after the agent returns.
   _TMPOUT=$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ralph_out_$$")
-  mapfile -t _TO < <(ralph_timeout_prefix)
+  mapfile -t _TO < <(ralph_timeout_prefix "$_ITER_TIMEOUT")
   if [[ "$TOOL" == "claude" ]]; then
     # Pipeline: timeout claude | tee — PIPESTATUS[0] is the timeout-wrapped agent.
     "${_TO[@]}" claude --dangerously-skip-permissions --print \
@@ -855,18 +866,19 @@ except Exception: pass
   # no-sentinel marker so the existing stall branch rolls back and counts the strike.
   # Must run BEFORE is_rate_limited_output so a timeout isn't misclassified.
   # First disambiguate: a hang caused by usage exhaustion must wait for reset, not
-  # burn the stall counter (DECISION:014).
-  if [[ "${RALPH_TASK_TIMEOUT:-1800}" -gt 0 && \
+  # burn the stall counter (DECISION:014). A per-task _ITER_TIMEOUT of 0 disables
+  # the watchdog for this task — never read a 124/137 as a watchdog kill in that case.
+  if [[ "${_ITER_TIMEOUT:-1800}" -gt 0 && \
         ( "${_AGENT_RC:-0}" -eq 124 || "${_AGENT_RC:-0}" -eq 137 ) ]]; then
     if is_usage_exhausted; then
       echo "  ⏱ $TASK_ID timed out while usage exhausted — treating as rate-limit"
-      echo "[$ITERATION] TIMEOUT-RATELIMIT on $TASK_ID after ${RALPH_TASK_TIMEOUT}s (rc=$_AGENT_RC): $(date)" >> "$LOG_FILE"
+      echo "[$ITERATION] TIMEOUT-RATELIMIT on $TASK_ID after ${_ITER_TIMEOUT}s (rc=$_AGENT_RC): $(date)" >> "$LOG_FILE"
       wait_for_reset "$TASK_ID" "timeout-ratelimit"
       ITERATION=$((ITERATION - 1))
       continue
     fi
-    echo "  ⏱ $TASK_ID exceeded ${RALPH_TASK_TIMEOUT}s — agent killed (treating as stall)"
-    echo "[$ITERATION] TIMEOUT on $TASK_ID after ${RALPH_TASK_TIMEOUT}s (rc=$_AGENT_RC): $(date)" >> "$LOG_FILE"
+    echo "  ⏱ $TASK_ID exceeded ${_ITER_TIMEOUT}s — agent killed (treating as stall)"
+    echo "[$ITERATION] TIMEOUT on $TASK_ID after ${_ITER_TIMEOUT}s (rc=$_AGENT_RC): $(date)" >> "$LOG_FILE"
     OUTPUT="[RALPH_TIMEOUT]"
   fi
 
@@ -1011,11 +1023,12 @@ m = re.search(r'^- \[ \] (T[0-9]+)(.*)', content, re.MULTILINE)
 if m:
     task_id = m.group(1)
     title = m.group(2).strip().lstrip('\u00b7\u2014- ').strip()
-    # Find that task's ## section and extract its Relevant: and Tier: lines
+    # Find that task's ## section and extract its Relevant:, Tier: and Timeout: lines
     sec = re.search(r'^## ' + re.escape(task_id) + r'\b[^\n]*\n(.*?)(?=^## T|\Z)',
                     content, re.MULTILINE | re.DOTALL)
     relevant = []
     tier = 'medium'
+    timeout = ''
     if sec:
         rel = re.search(r'^Relevant:\s*(.+)$', sec.group(1), re.MULTILINE)
         if rel:
@@ -1023,16 +1036,21 @@ if m:
         t = re.search(r'^Tier:\s*(\S+)$', sec.group(1), re.MULTILINE)
         if t:
             tier = t.group(1).strip()
+        to_m = re.search(r'^Timeout:\s*(\d+)\s*$', sec.group(1), re.MULTILINE)
+        if to_m:
+            timeout = to_m.group(1).strip()
     print(task_id)
     print(title)
     print(json.dumps(relevant))
     print(tier)
+    print(timeout)
 " "$_spec_tasks" 2>/dev/null || echo "")
         if [[ -n "$_next_result" ]]; then
           _next_task_id=$(echo    "$_next_result" | sed -n '1p')
           _next_task_title=$(echo "$_next_result" | sed -n '2p')
           _next_relevant_files=$(echo "$_next_result" | sed -n '3p')
           _next_tier=$(echo "$_next_result" | sed -n '4p')
+          _next_timeout=$(echo "$_next_result" | sed -n '5p')
           [[ -z "$_next_relevant_files" ]] && _next_relevant_files="[]"
           [[ -z "$_next_tier" ]] && _next_tier="medium"
         fi
@@ -1043,6 +1061,7 @@ if m:
         sync_write "ralph.task_title"    "$_next_task_title"    2>/dev/null || true
         sync_write "ralph.relevant_files" "$_next_relevant_files" 2>/dev/null || true
         sync_write "ralph.tier"          "$_next_tier"          2>/dev/null || true
+        sync_write "ralph.task_timeout"  "$_next_timeout"       2>/dev/null || true
         echo "  → Next: $_next_task_id — $_next_task_title"
         echo "[$ITERATION] Advanced to $_next_task_id: $(date)" >> "$LOG_FILE"
       else
