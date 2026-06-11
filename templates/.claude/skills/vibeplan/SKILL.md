@@ -531,6 +531,7 @@ Depends on: —
 Verify: `<command>` exits 0
 Relevant: docs/claude/conventions.md
 Tier: simple | medium | complex
+Timeout: <seconds>             (optional — overrides the global per-task watchdog; `Timeout: 0` disables it; prefer a fast `Verify:` over a long `Timeout:` for docs tasks)
 
 Description precise enough for Ralph to start without asking. Reference specific files,
 patterns, and conventions by name. One task = one completable session (~100K token budget).
@@ -542,6 +543,7 @@ Depends on: T001
 Verify: `<command>` exits 0
 Relevant: docs/claude/conventions.md
 Tier: simple | medium | complex
+Timeout: <seconds>             (optional)
 
 Description...
 ```
@@ -562,6 +564,8 @@ Assign each task a tier:
 - `complex` — core-logic, cross-cutting, or architectural change
 
 **Tier floor:** Any task that runs the full test suite, reconciles docs across multiple files, or spans several files MUST be tagged at least `medium` — never `simple`. The simple/Haiku tier is for mechanical single-file or config changes only.
+
+**Fast-verify rule:** Docs/markdown-only tasks — including the recurring "reconcile docs + DECISION" final task — MUST use a fast, bounded `Verify:` command: an AST parse (`python3 -c "import ast; ast.parse(open('<file>').read())"`), a JSON load (`python3 -c "import json; json.load(open('<file>'))"`), or a `grep` assertion. They must NOT gate on the full test suite, the e2e/Playwright suite, or any `docker compose run` integration command. Those long suites exceed the agent-session watchdog and stall the task; the authoritative `verify_build()` already covers syntax post-completion. If a docs task seems to need a heavier verify, use a fast `grep` assertion and rely on `verify_build()` for deeper checks — or add a `Timeout:` line as a last resort.
 
 The tier maps to a model via `MODEL_SIMPLE/MEDIUM/COMPLEX` in `vibekit.config.sh` (Haiku/Sonnet/Opus by default). An untagged task falls back to `medium`.
 

@@ -1,47 +1,8 @@
 # Tasks: 012-per-task-timeout
 
 - [x] T001 · Per-task Timeout override in ralph.sh
-- [ ] T002 · vibeplan fast-verify rule for docs tasks + document Timeout
+- [x] T002 · vibeplan fast-verify rule for docs tasks + document Timeout
 - [ ] T003 · Docs reconcile + DECISION:016 + manifest + sync.json schema
-
----
-
-## T001 · Per-task Timeout override in ralph.sh
-Depends on: —
-Verify: `bash -n scripts/ralph.sh && grep -q 'task_timeout' scripts/ralph.sh`
-Relevant: docs/claude/architecture.md, docs/claude/conventions.md, scripts/ralph.sh
-Tier: complex
-
-Add a per-task agent-session timeout that overrides the global `RALPH_TASK_TIMEOUT`
-(default 1800s), mirroring the existing `Tier:` mechanism exactly. Motivating bug: a
-markdown-only task whose `Verify:` ran the full Docker pytest suite always exceeded the
-1800s watchdog → 3 stalls → stop. A task must be able to declare a longer timeout, or
-`0` to disable the watchdog for itself.
-
-1. **Parser** — in the next-task advance parser (the python block ~967-1000 that reads
-   `Relevant:` and `Tier:` from the task's `## T###` section), also extract an optional
-   `Timeout:` line: `^Timeout:\s*(\d+)\s*$`. Print it as a 5th output line (empty string
-   if absent). After the existing `_next_tier` handling, capture `_next_timeout` and
-   `sync_write "ralph.task_timeout" "$_next_timeout"` (write empty/`null` when absent so
-   the loop falls back to the default).
-2. **Loop read** — near where the loop reads `ralph.tier` (~603), also
-   `TASK_TIMEOUT=$(sync_read "ralph.task_timeout" ...)`. Compute an effective value:
-   `_ITER_TIMEOUT` = `$TASK_TIMEOUT` when it is a non-negative integer (including `0`),
-   else `$RALPH_TASK_TIMEOUT`. Treat empty/`null`/non-numeric as "use the default".
-3. **Apply** — make `ralph_timeout_prefix` use the effective value for the **task agent**
-   invocation only. Cleanest: give `ralph_timeout_prefix` an optional first arg
-   (`local secs="${1:-${RALPH_TASK_TIMEOUT:-1800}}"`) and call
-   `mapfile -t _TO < <(ralph_timeout_prefix "$_ITER_TIMEOUT")` at the task-agent call
-   site (~807). The final-QC (~652) and checkpoint-QC (~1050) calls must keep using the
-   **global** default — call `ralph_timeout_prefix` with no arg there.
-4. The timeout→stall classification logic (rc 124/137) and the T001-from-spec-011
-   `is_usage_exhausted` guard are unchanged — they already read `RALPH_TASK_TIMEOUT` only
-   to decide whether the watchdog is active; update those `-gt 0` guards to also treat a
-   per-task `_ITER_TIMEOUT` of 0 as "watchdog disabled for this task" so a disabled-task
-   timeout is never misread.
-
-Do not change the global default or the 3-strike machinery. Do not refactor surrounding
-code.
 
 ---
 
