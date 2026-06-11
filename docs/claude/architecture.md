@@ -24,10 +24,11 @@ Autonomous execution loop. Per iteration:
 2. Reads `ralph.task_id` from `state/sync.json`
 3. Substitutes `{{SKILLS_CONTEXT}}` in `scripts/ralph-prompt.md` with loaded skill manifests
 4. Resolves the per-iteration model from the task's `tier` field (`MODEL_SIMPLE`/`MODEL_MEDIUM`/`MODEL_COMPLEX`); build-failure retries escalate one tier; `MODEL_AUTO=false` or `--model` flag uses `$MODEL` for all tasks; both QC stages always run on `MODEL_QC`
-5. Runs `claude --dangerously-skip-permissions --print --model $_ITER_MODEL`
-6. Detects sentinels in output, runs `verify_build()` on TASK_COMPLETE, rolls back on failure
-7. After a successful task, increments `TASKS_SINCE_CHECKPOINT`; fires a checkpoint QC round if `>= CHECKPOINT_QC_EVERY` (default 3) AND ≥2 unchecked tasks remain
-8. When all tasks are `[x]`, fires completion QC; exits on `[QC_COMPLETE]`
+5. Resolves the effective per-task timeout (`_ITER_TIMEOUT`) from `ralph.task_timeout`: uses it when it is a non-negative integer (including `0` to disable the watchdog), else falls back to the global `RALPH_TASK_TIMEOUT`. Only the task-agent invocation uses `_ITER_TIMEOUT`; QC stages always use the global default. See DECISION:016.
+6. Runs `claude --dangerously-skip-permissions --print --model $_ITER_MODEL`
+7. Detects sentinels in output, runs `verify_build()` on TASK_COMPLETE, rolls back on failure
+8. After a successful task, increments `TASKS_SINCE_CHECKPOINT`; fires a checkpoint QC round if `>= CHECKPOINT_QC_EVERY` (default 3) AND ≥2 unchecked tasks remain
+9. When all tasks are `[x]`, fires completion QC; exits on `[QC_COMPLETE]`
 
 Rate limits are detected before timeout exits (timeout codes 124/137 take precedence). On confirmed rate limit, ralph.sh resumes in-process after the rate-limit window clears — no external wrapper needed. Exit code 75 (`RALPH_EXIT_RATE_LIMIT=75`, `EX_TEMPFAIL`) is reserved for machine-readable signaling. See DECISION:015.
 

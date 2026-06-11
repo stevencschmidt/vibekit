@@ -2,31 +2,7 @@
 
 - [x] T001 · Per-task Timeout override in ralph.sh
 - [x] T002 · vibeplan fast-verify rule for docs tasks + document Timeout
-- [ ] T003 · Docs reconcile + DECISION:016 + manifest + sync.json schema
-
----
-
-## T002 · vibeplan fast-verify rule for docs tasks + document Timeout
-Depends on: T001
-Verify: `grep -qi 'fast' templates/.claude/skills/vibeplan/SKILL.md && grep -q 'Timeout:' templates/.claude/skills/vibeplan/SKILL.md`
-Relevant: docs/claude/conventions.md, templates/.claude/skills/vibeplan/SKILL.md
-Tier: medium
-
-Stop planners from gating light tasks on heavy suites, and document the new escape hatch.
-
-1. In `templates/.claude/skills/vibeplan/SKILL.md`, in the task-authoring rules
-   ("Rules for good tasks" / tier section ~553-564), add a rule: a docs/markdown-only
-   task (and the recurring "reconcile docs + DECISION" final task) MUST use a fast,
-   bounded `Verify:` — an AST parse, a `json.load`, or a `grep` assertion — and must NOT
-   gate on the full test suite, the e2e/Playwright suite, or any `docker compose run`
-   integration command. Those long suites exceed the agent-session watchdog and stall the
-   task; the authoritative `verify_build()` already covers syntax post-completion.
-2. Document the optional `Timeout:` line in the `## T###` task-shape template (alongside
-   `Tier:`): `Timeout: <seconds>` overrides the global agent-session watchdog for that
-   task; `Timeout: 0` disables it. State it is the escape hatch for a genuinely long task
-   (and that the *right* fix for a docs task is a fast verify, not a long timeout).
-
-Markdown edits only. Do not touch ralph.sh.
+- [x] T003 · Docs reconcile + DECISION:016 + manifest + sync.json schema
 
 ---
 

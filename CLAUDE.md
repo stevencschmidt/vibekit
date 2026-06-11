@@ -47,12 +47,13 @@ When asked to build, fix, investigate, or debug anything non-trivial:
 - **Scaffold a project:** `./init.sh <target-dir> [project-name]`
 - **No build step, no package manager** — bash + python3 + claude CLI
 - **MODEL_AUTO:** `true` routes each task to the model matching its tier; `false` or `--model` flag uses `$MODEL` for all tasks
+- **Per-task timeout:** a task may set `Timeout: <seconds>` in its body to override the global `RALPH_TASK_TIMEOUT` watchdog; `Timeout: 0` disables the watchdog for that task
 
 ---
 
 ## Decision Log
 
-Total decisions: 015
+Total decisions: 016
 
 Read the last 5 entries from `docs/claude/decisions.md` when making architectural choices.
 
@@ -142,6 +143,7 @@ verify_build() { return 0; }  # project-specific
     "task_title": "",
     "relevant_files": [],
     "tier": "medium",
+    "task_timeout": null,
     "last_sentinel": null,
     "last_updated": null,
     "session": 1

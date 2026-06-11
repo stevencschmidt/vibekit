@@ -2,13 +2,13 @@
   "files": [
     {
       "path": "docs/claude/architecture.md",
-      "summary": "Three-pillar architecture (Knowledge Graph, /vibeplan, Ralph), component map, per-iteration flow with model routing from task tier and QC pinned to MODEL_QC, rate-limit auto-resume in-process (RALPH_EXIT_RATE_LIMIT=75, DECISION:015), tasks/brief archive split, sync-agent mode dispatch, runtime state gitignore policy (DECISION:011), and key boundaries.",
-      "tags": ["architecture", "pillars", "components", "ralph", "sync-agent", "qc", "manifest", "boundaries", "archive", "brief", "design", "model-routing", "tier", "state", "gitignore", "rate-limit", "exit-code"]
+      "summary": "Three-pillar architecture (Knowledge Graph, /vibeplan, Ralph), component map, per-iteration flow with model routing from task tier and QC pinned to MODEL_QC, per-task timeout override via ralph.task_timeout (DECISION:016), rate-limit auto-resume in-process (RALPH_EXIT_RATE_LIMIT=75, DECISION:015), tasks/brief archive split, sync-agent mode dispatch, runtime state gitignore policy (DECISION:011), and key boundaries.",
+      "tags": ["architecture", "pillars", "components", "ralph", "sync-agent", "qc", "manifest", "boundaries", "archive", "brief", "design", "model-routing", "tier", "timeout", "task-timeout", "state", "gitignore", "rate-limit", "exit-code"]
     },
     {
       "path": "docs/claude/conventions.md",
-      "summary": "Script style, commit prefixes, sentinel protocol, skill format, verify_build() stack-awareness, model routing/tier convention (tier→model mapping, escalation, QC pinning), structured delta obligation, archive file naming, runtime state gitignore policy with scoped safety_commit (DECISION:011), single-instance concurrency guard (pid-liveness check, --force override, EXIT-trap release), untrack-on-adopt for state/ (DECISION:012), rate-limit auto-resume in-process (RALPH_EXIT_RATE_LIMIT=75, DECISION:015), no-background-commands rule for agents, sync hook arg convention, session policy.",
-      "tags": ["conventions", "commit-prefixes", "sentinels", "verify-build", "skill-format", "session-policy", "structured-delta", "archive", "sync-hook", "model-routing", "tier", "state", "gitignore", "safety-commit", "concurrency", "lock", "pid", "untrack", "rate-limit", "exit-code", "no-background"]
+      "summary": "Script style, commit prefixes, sentinel protocol, skill format, verify_build() stack-awareness, model routing/tier convention (tier→model mapping, escalation, QC pinning), per-task Timeout override (Timeout: line → ralph.task_timeout → _ITER_TIMEOUT, DECISION:016), docs-task fast-verify rule, structured delta obligation, archive file naming, runtime state gitignore policy with scoped safety_commit (DECISION:011), single-instance concurrency guard (pid-liveness check, --force override, EXIT-trap release), untrack-on-adopt for state/ (DECISION:012), rate-limit auto-resume in-process (RALPH_EXIT_RATE_LIMIT=75, DECISION:015), no-background-commands rule for agents, sync hook arg convention, session policy.",
+      "tags": ["conventions", "commit-prefixes", "sentinels", "verify-build", "skill-format", "session-policy", "structured-delta", "archive", "sync-hook", "model-routing", "tier", "timeout", "task-timeout", "fast-verify", "state", "gitignore", "safety-commit", "concurrency", "lock", "pid", "untrack", "rate-limit", "exit-code", "no-background"]
     },
     {
       "path": "docs/claude/stack.md",

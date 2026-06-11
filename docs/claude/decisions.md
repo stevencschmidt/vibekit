@@ -1,6 +1,6 @@
 # Decision Log
 
-Total decisions: 015
+Total decisions: 016
 
 Append-only audit log. Each entry has an anchor for precise retrieval.
 
@@ -189,3 +189,16 @@ in force.
   `docs/claude/{architecture,conventions,decisions}.md`, `CLAUDE.md`
 - Considered but rejected: keeping the supervisor as an optional escape hatch (adds
   dead code maintenance burden; the in-process resume already covers the use case)
+
+---
+
+<!-- DECISION:016 | domains: architecture, conventions -->
+## DECISION:016 — Per-task Timeout override + vibeplan fast-verify rule for docs tasks
+
+Builds on DECISION:013 (agent-session hang recovery).
+
+- **Per-task `Timeout:` override**: tasks carry an optional `Timeout: <seconds>` line in their `## T###` body (alongside `Tier:` and `Relevant:`). Ralph's next-task advance parser extracts it and writes `ralph.task_timeout` to `state/sync.json`. The loop resolves an effective per-iteration timeout (`_ITER_TIMEOUT`): uses `task_timeout` when it is a non-negative integer (including `0`), else falls back to the global `RALPH_TASK_TIMEOUT` default. `Timeout: 0` disables the watchdog entirely for that task. Only the task-agent invocation uses `_ITER_TIMEOUT`; QC stages always use the global default.
+- **Vibeplan fast-verify rule for docs tasks**: `/vibeplan` now enforces that docs/markdown-only tasks and the recurring "reconcile docs + DECISION" final task MUST use a fast, bounded `Verify:` (an AST parse, a `json.load`, or a `grep` assertion). Gating on the full test suite, e2e/Playwright suite, or any `docker compose run` integration command is forbidden for these tasks — those long-running suites exceed the agent-session watchdog and stall the task. `verify_build()` already covers syntax post-completion.
+- **Why**: a phramewerks docs-reconciliation task whose `Verify:` ran the full Docker pytest suite consistently exceeded the 1800s global watchdog → 3 stalls → stop. Two fixes: (1) the escape hatch — `Timeout:` lets a genuinely long task declare its own bound or disable the watchdog; (2) the preventive rule — docs tasks should never need a long timeout because their `Verify:` must be fast and bounded. The planner is now responsible for enforcing this at authoring time.
+- Files updated: `scripts/ralph.sh`, `templates/.claude/skills/vibeplan/SKILL.md`, `docs/claude/{architecture,conventions,decisions}.md`, `CLAUDE.md`
+- Considered but rejected: raising the global `RALPH_TASK_TIMEOUT` default (would mask stalls on all tasks, not just docs ones); making `Verify:` optional for docs tasks (removes the correctness gate entirely); a task-type classifier at runtime (adds complexity; the planner already has full context to judge).

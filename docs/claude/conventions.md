@@ -95,6 +95,18 @@ Tasks carry an optional `Tier:` field (`simple`, `medium`, `complex`). When `MOD
 - **`MODEL_AUTO=false`** or passing `--model` on the CLI bypasses routing and runs every task on `$MODEL`.
 - `/vibeplan` writes a `Tier:` line per task and writes `ralph.tier` in `state/sync.json`; QC-appended tasks also carry a tier.
 
+## Per-Task Timeout Override
+
+Tasks carry an optional `Timeout: <seconds>` line (alongside `Tier:` and `Relevant:`). Ralph's next-task advance parser extracts it and writes `ralph.task_timeout` to `state/sync.json`. The loop resolves an effective per-iteration timeout (`_ITER_TIMEOUT`):
+
+- If `ralph.task_timeout` is a non-negative integer (including `0`), it becomes `_ITER_TIMEOUT`.
+- Otherwise (empty, `null`, or non-numeric), `_ITER_TIMEOUT` falls back to the global `RALPH_TASK_TIMEOUT` default.
+- `Timeout: 0` disables the watchdog entirely for that task.
+
+Only the task-agent invocation uses `_ITER_TIMEOUT`. QC stages always use the global default (`RALPH_TASK_TIMEOUT`). See DECISION:016.
+
+**Docs-task fast-verify rule**: Docs/markdown-only tasks and the recurring "reconcile docs + DECISION" final task MUST use a fast, bounded `Verify:` (an AST parse, a `json.load`, or a `grep` assertion). Gating on the full test suite, e2e/Playwright suite, or any long-running integration command is forbidden — those suites exceed the agent-session watchdog. `verify_build()` already covers syntax correctness post-completion. `Timeout:` is the escape hatch for a genuinely long task; the *right* fix for a docs task is a fast verify, not a long timeout.
+
 ## Structured Delta Obligation (Sync Agent)
 
 The sync agent's `Step 1.5` runs before free-form signal sniffing:
